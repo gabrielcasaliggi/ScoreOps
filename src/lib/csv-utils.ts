@@ -3,7 +3,30 @@ export interface CsvParseResult<T> {
   errors: { fila: number; motivo: string }[];
 }
 
-function parseCsvLine(line: string): string[] {
+export function parseCsvContent(content: string): { headers: string[]; rows: string[][] } {
+  const lines = content
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return { headers: [], rows: [] };
+  }
+
+  const delimiter = detectDelimiter(lines[0]);
+  const headers = parseCsvLine(lines[0], delimiter).map((h) => h.toLowerCase());
+  const rows = lines.slice(1).map((line) => parseCsvLine(line, delimiter));
+  return { headers, rows };
+}
+
+function detectDelimiter(headerLine: string): "," | ";" {
+  const commas = (headerLine.match(/,/g) ?? []).length;
+  const semicolons = (headerLine.match(/;/g) ?? []).length;
+  return semicolons > commas ? ";" : ",";
+}
+
+function parseCsvLine(line: string, delimiter: "," | ";" = ","): string[] {
   const result: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -17,7 +40,7 @@ function parseCsvLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === "," && !inQuotes) {
+    } else if (char === delimiter && !inQuotes) {
       result.push(current.trim());
       current = "";
     } else {
@@ -26,22 +49,6 @@ function parseCsvLine(line: string): string[] {
   }
   result.push(current.trim());
   return result;
-}
-
-export function parseCsvContent(content: string): { headers: string[]; rows: string[][] } {
-  const lines = content
-    .replace(/^\uFEFF/, "")
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  if (lines.length === 0) {
-    return { headers: [], rows: [] };
-  }
-
-  const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
-  const rows = lines.slice(1).map(parseCsvLine);
-  return { headers, rows };
 }
 
 export function rowToRecord(headers: string[], row: string[]): Record<string, string> {

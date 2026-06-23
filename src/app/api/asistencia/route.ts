@@ -4,8 +4,13 @@ import type { AsistenciaTipo, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { parsePeriodoParam, periodoIdFromDate } from "@/lib/productivity-period";
-import { parseCsvContent, rowToRecord } from "@/lib/csv-utils";
+import { parseCsvContent } from "@/lib/csv-utils";
 import { ASISTENCIA_TIPO_LABELS } from "@/lib/asistencia";
+import {
+  normalizeHeader,
+  parseAsistenciaImportRows,
+  type AsistenciaImportFormato,
+} from "@/lib/asistencia-import";
 
 const createSchema = z.object({
   userId: z.string().min(1),
@@ -134,17 +139,29 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const content = body.csv as string | undefined;
     if (!content?.trim()) {
-      return apiError("Se requiere el contenido CSV en el campo 'csv'");
+      return apiError("Se requiere el contenido del archivo o CSV en el campo 'csv'");
     }
+
+    const formato: AsistenciaImportFormato =
+      body.formato === "reloj" ? "reloj" : "completo";
 
     const { headers, rows } = parseCsvContent(content);
-    const required = ["legajo", "fecha", "tipo"];
-    const missing = required.filter((h) => !headers.includes(h));
-    if (missing.length > 0) {
-      return apiError(`Columnas faltantes: ${missing.join(", ")}`);
+    if (rows.length === 0) {
+      return apiError("El archivo no tiene filas de datos");
     }
 
-    const errores: { fila: number; motivo: string }[] = [];
+    const normalizedHeaders = headers.map(normalizeHeader);
+    if (!normalizedHeaders.includes("legajo") || !normalizedHeaders.includes("fecha")) {
+      return apiError("Columnas mínimas requeridas: legajo, fecha");
+    }
+
+    const { rows: parsedRows, errores } = parseAsistenciaImportRows({
+      headers,
+      rows,
+      formato,
+      parseTipo: parseAsistenciaTipo,
+    });
+
     let filasOk = 0;
 
     const batch = await prisma.importBatch.create({
@@ -158,66 +175,46 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    for (let i = 0; i < rows.length; i++) {
-      const fila = i + 2;
-      const record = rowToRecord(headers, rows[i]);
-
-      const tipo = parseAsistenciaTipo(record.tipo);
-      if (!tipo) {
-        errores.push({ fila, motivo: `Tipo inválido: ${record.tipo}` });
-        continue;
-      }
-
+    for (const row of parsedRows) {
       const empleado = await prisma.user.findFirst({
-        where: { legajo: record.legajo, activo: true },
+        where: { legajo: row.legajo, activo: true },
         select: { id: true, areaId: true },
       });
+
       if (!empleado) {
-        errores.push({ fila, motivo: `Legajo no encontrado: ${record.legajo}` });
+        errores.push({ fila: row.fila, motivo: `Legajo no encontrado: ${row.legajo}` });
         continue;
       }
 
       if (user.role === "GERENTE" && empleado.areaId !== user.areaId) {
-        errores.push({ fila, motivo: "Empleado fuera de tu área" });
-        continue;
-      }
-
-      const fecha = new Date(record.fecha);
-      if (Number.isNaN(fecha.getTime())) {
-        errores.push({ fila, motivo: `Fecha inválida: ${record.fecha}` });
-        continue;
-      }
-
-      const minutosTarde = record.minutos_tarde ? Number(record.minutos_tarde) : undefined;
-      if (record.minutos_tarde && Number.isNaN(minutosTarde)) {
-        errores.push({ fila, motivo: "minutos_tarde inválido" });
+        errores.push({ fila: row.fila, motivo: "Empleado fuera de tu área" });
         continue;
       }
 
       try {
         await prisma.asistenciaRegistro.upsert({
-          where: { userId_fecha: { userId: empleado.id, fecha } },
+          where: { userId_fecha: { userId: empleado.id, fecha: row.fecha } },
           create: {
             userId: empleado.id,
-            fecha,
-            tipo,
-            minutosTarde,
-            observacion: record.observacion || null,
-            periodoId: periodoIdFromDate(fecha),
+            fecha: row.fecha,
+            tipo: row.tipo,
+            minutosTarde: row.minutosTarde,
+            observacion: row.observacion || null,
+            periodoId: periodoIdFromDate(row.fecha),
             importBatchId: batch.id,
             creadoPorId: user.id,
           },
           update: {
-            tipo,
-            minutosTarde,
-            observacion: record.observacion || null,
-            periodoId: periodoIdFromDate(fecha),
+            tipo: row.tipo,
+            minutosTarde: row.minutosTarde,
+            observacion: row.observacion || null,
+            periodoId: periodoIdFromDate(row.fecha),
             importBatchId: batch.id,
           },
         });
         filasOk++;
       } catch {
-        errores.push({ fila, motivo: "Error al guardar registro" });
+        errores.push({ fila: row.fila, motivo: "Error al guardar registro" });
       }
     }
 
@@ -226,12 +223,16 @@ export async function PUT(request: NextRequest) {
       data: {
         filasOk,
         filasError: errores.length,
-        errores: errores.length > 0 ? errores : undefined,
+        errores:
+          errores.length > 0
+            ? (JSON.parse(JSON.stringify(errores)) as Prisma.InputJsonValue)
+            : undefined,
       },
     });
 
     return apiSuccess({
       batchId: batch.id,
+      formato,
       filasTotal: rows.length,
       filasOk,
       filasError: errores.length,
