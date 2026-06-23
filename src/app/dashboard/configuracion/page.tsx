@@ -1,0 +1,355 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MetasColectivasPanel } from "@/components/dashboard/metas-colectivas-panel";
+
+interface Usuario {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+}
+
+interface PremioConfig {
+  antiguedadMinimaMeses: number;
+  tramoA: number;
+  tramoB: number;
+  tramoC: number;
+  tramoD: number;
+  tramoE: number;
+  impuntualidadMaxMinutos: number;
+  impuntualidadMaxCantidad: number;
+  metaReparaciones: number;
+  metaPulsos: number;
+  metaCobranzas: number;
+}
+
+export default function ConfiguracionPage() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [resetUserId, setResetUserId] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [premioConfig, setPremioConfig] = useState<PremioConfig | null>(null);
+  const [premioLoading, setPremioLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        setRole(data.user?.role ?? null);
+        if (data.user?.role === "ADMINISTRADOR" || data.user?.role === "GERENTE") {
+          fetch("/api/usuarios")
+            .then((r) => r.json())
+            .then(setUsuarios);
+        }
+        if (data.user?.role === "ADMINISTRADOR") {
+          fetch("/api/admin/config")
+            .then((r) => r.json())
+            .then((cfg) => setPremioConfig(cfg.art49));
+        }
+      });
+  }, []);
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+
+    if (newPassword !== confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Error al cambiar contraseña");
+        return;
+      }
+
+      setMessage("Contraseña actualizada correctamente");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      setError("Error de conexión");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAdminReset(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: resetUserId, newPassword: resetPassword }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Error al restablecer");
+      return;
+    }
+
+    setMessage("Contraseña del empleado restablecida.");
+    setResetPassword("");
+  }
+
+  async function handlePremioConfig(e: React.FormEvent) {
+    e.preventDefault();
+    if (!premioConfig) return;
+    setPremioLoading(true);
+    setError("");
+    setMessage("");
+
+    const res = await fetch("/api/admin/config", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ art49: premioConfig }),
+    });
+    const data = await res.json();
+    setPremioLoading(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Error al guardar configuración");
+      return;
+    }
+    setPremioConfig(data.art49);
+    setMessage("Configuración Art. 49 actualizada");
+  }
+
+  const isManager = role === "ADMINISTRADOR" || role === "GERENTE";
+  const isAdmin = role === "ADMINISTRADOR";
+
+  return (
+    <div className="max-w-lg space-y-6">
+      <h1 className="text-2xl font-bold">Configuración</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cambiar contraseña</CardTitle>
+          <CardDescription>
+            Actualiza tu contraseña de acceso al sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Contraseña actual</Label>
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nueva contraseña</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Confirmar nueva contraseña</Label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {message && <p className="text-sm text-emerald-600">{message}</p>}
+            <Button type="submit" disabled={loading}>
+              {loading ? "Guardando..." : "Cambiar contraseña"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isAdmin && premioConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Premio semestral — Art. 49</CardTitle>
+            <CardDescription>
+              Tramos a–e del convenio. S1 (ene–jun) se paga en septiembre; S2 (jul–dic) en marzo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePremioConfig} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Antigüedad mínima (meses)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={premioConfig.antiguedadMinimaMeses}
+                    onChange={(e) =>
+                      setPremioConfig({
+                        ...premioConfig,
+                        antiguedadMinimaMeses: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Impuntualidad máx. (min c/u)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={premioConfig.impuntualidadMaxMinutos}
+                    onChange={(e) =>
+                      setPremioConfig({
+                        ...premioConfig,
+                        impuntualidadMaxMinutos: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Cantidad máx. impuntualidades leves</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={premioConfig.impuntualidadMaxCantidad}
+                  onChange={(e) =>
+                    setPremioConfig({
+                      ...premioConfig,
+                      impuntualidadMaxCantidad: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                {(
+                  [
+                    ["tramoA", "a) 30%"],
+                    ["tramoB", "b) 5%"],
+                    ["tramoC", "c) 5%"],
+                    ["tramoD", "d) 5%"],
+                    ["tramoE", "e) 5%"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="space-y-1">
+                    <Label className="text-xs">{label}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={premioConfig[key]}
+                      onChange={(e) =>
+                        setPremioConfig({
+                          ...premioConfig,
+                          [key]: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button type="submit" disabled={premioLoading}>
+                {premioLoading ? "Guardando..." : "Guardar parámetros"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAdmin && <MetasColectivasPanel isAdmin />}
+
+      {isManager && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Restablecer contraseña de empleado</CardTitle>
+            <CardDescription>
+              Cuando un empleado solicita recuperación, restablece su contraseña aquí
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAdminReset} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Empleado</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={resetUserId}
+                  onChange={(e) => setResetUserId(e.target.value)}
+                  required
+                >
+                  <option value="">Seleccionar empleado</option>
+                  {usuarios.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nombre} {u.apellido} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Nueva contraseña</Label>
+                <Input
+                  type="password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button type="submit">Restablecer contraseña</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Integración RRHH</CardTitle>
+            <CardDescription>
+              Endpoint stub para sincronización futura con sistema de RRHH
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>
+              <code className="text-xs bg-muted px-1 rounded">POST /api/integrations/rrhh/sync</code>
+            </p>
+            <p>
+              Configurá <code className="text-xs bg-muted px-1 rounded">INTEGRATION_API_KEY</code> en
+              el servidor. Payload: <code className="text-xs">apiKey</code> +{" "}
+              <code className="text-xs">empleados[]</code> con externalId, email, nombre, apellido,
+              area.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vertia ScoreOps
 
-## Getting Started
+Sistema web on-premise para gestión de puntajes, tareas, presentismo y KPIs de la cooperativa.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router + TypeScript)
+- **PostgreSQL** + **Prisma ORM**
+- **Tailwind CSS** + componentes estilo Shadcn/ui
+- **Recharts** para gráficos de productividad
+
+## Requisitos
+
+- Node.js 20+
+- PostgreSQL 14+ (instalado localmente en la VM)
+
+## Instalación
 
 ```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Editar DATABASE_URL y SESSION_SECRET
+
+# 3. Crear base de datos PostgreSQL
+sudo -u postgres createdb gestion_tareas
+
+# 4. Ejecutar migraciones y seed
+npx prisma migrate dev --name init
+npm run db:seed
+
+# 5. Iniciar en desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usuarios de demo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Email | Rol | Contraseña |
+|-------|-----|------------|
+| admin@vertia.local | ADMINISTRADOR | password123 |
+| gerente@vertia.local | GERENTE | password123 |
+| empleado@vertia.local | EMPLEADO | password123 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Endpoints
 
-## Learn More
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/auth/login` | Iniciar sesión |
+| POST | `/api/auth/logout` | Cerrar sesión |
+| GET | `/api/auth/me` | Usuario actual |
+| GET/POST | `/api/tareas` | Listar/crear tareas |
+| PATCH | `/api/tareas/[id]` | Actualizar tarea |
+| GET/POST | `/api/objetivos` | Objetivos |
+| GET/POST/PATCH | `/api/kpis` | KPIs |
+| GET | `/api/stats/equipo` | Estadísticas del equipo (gerente) |
+| GET | `/api/stats/personal` | Estadísticas personales |
 
-To learn more about Next.js, take a look at the following resources:
+## Algoritmos de productividad
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Cumplimiento KPI:** `(Valor Actual / Valor Meta) × 100`
+- **Eficiencia temporal:** `(Tiempo Estimado / Tiempo Real) × 100` en tareas completadas
+- **Score general:** `60% KPI + 40% Eficiencia`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Despliegue en producción (VM on-premise)
 
-## Deploy on Vercel
+### 1. Build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 2. PM2
+
+```bash
+npm install -g pm2
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+```
+
+### 3. Nginx (proxy inverso)
+
+```nginx
+server {
+    listen 80;
+    server_name vertia.cooperativa.local;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### 4. PostgreSQL
+
+Asegurar que PostgreSQL escucha solo en la red local y que las credenciales en `.env` son seguras.
+
+## Estructura del proyecto
+
+```
+src/
+├── app/
+│   ├── api/          # Endpoints REST
+│   ├── dashboard/    # Vistas del dashboard
+│   └── page.tsx      # Login
+├── components/
+│   ├── ui/           # Componentes base
+│   ├── dashboard/    # Gráficos y tableros
+│   └── layout/       # Shell de la app
+└── lib/
+    ├── prisma.ts     # Cliente Prisma
+    ├── auth.ts       # Sesiones
+    └── productivity.ts # Cálculos KPI/eficiencia
+prisma/
+├── schema.prisma     # Modelo de datos
+└── seed.ts           # Datos de demo
+```

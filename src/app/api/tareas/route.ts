@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
 
   if (user.role === "EMPLEADO") {
     where.userId = user.id;
+  } else if (user.role === "GERENTE") {
+    where.user = { areaId: user.areaId };
+    if (userId) where.userId = userId;
   } else if (userId) {
     where.userId = userId;
   }

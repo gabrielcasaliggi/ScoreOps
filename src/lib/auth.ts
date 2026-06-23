@@ -105,7 +105,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     include: { area: true },
   });
 
-  if (!user) return null;
+  if (!user || !user.activo) return null;
   return toSessionUser(user);
 }
 

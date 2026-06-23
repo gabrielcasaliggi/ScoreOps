@@ -45,6 +45,11 @@ export async function POST(request: NextRequest) {
       return apiError("Email o contraseña incorrectos", 401);
     }
 
+    if (!user.activo) {
+      await recordLoginAttempt(parsed.data.email, false, ip);
+      return apiError("Cuenta desactivada. Contactá al administrador.", 403);
+    }
+
     const valid = await bcrypt.compare(parsed.data.password, user.password);
     if (!valid) {
       await recordLoginAttempt(parsed.data.email, false, ip);

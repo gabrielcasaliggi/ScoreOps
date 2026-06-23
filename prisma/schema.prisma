@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMINISTRADOR
+  GERENTE
+  EMPLEADO
+}
+
+enum TaskStatus {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADA
+}
+
+enum NotificationType {
+  KPI_RIESGO
+  TAREA_VENCIDA
+  OBJETIVO_PROXIMO
+  SISTEMA
+}
+
+enum AsistenciaTipo {
+  PRESENTE
+  IMPUNTUALIDAD
+  INASISTENCIA_INJUSTIFICADA
+  VACACIONES
+  LICENCIA_EXAMEN
+  LICENCIA_MUDANZA
+  LICENCIA_GREMIAL
+  LICENCIA_NACIMIENTO
+  LICENCIA_FALLECIMIENTO
+  CARPETA_MEDICA_JUSTIFICADA
+  ACCIDENTE_TRABAJO
+  SANCION_DISCIPLINARIA
+  SUSPENSION_DISCIPLINARIA
+  OTRO_JUSTIFICADO
+}
+
+enum MetaColectivaTipo {
+  REPARACIONES
+  PULSOS
+  COBRANZAS
+}
+
+enum EvaluacionRol {
+  AUTOEVALUACION
+  GERENTE
+  PAR
+  SUBORDINADO
+}
+
+enum ScoreAuditEvento {
+  CALCULO_AUTOMATICO
+  RECALCULO_MANUAL
+  IMPORTACION_ASISTENCIA
+  AJUSTE_ADMIN
+  CIERRE_SEMESTRE
+}
+
+enum ImportBatchTipo {
+  EMPLEADOS
+  ASISTENCIA
+}
+
+model Area {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  usuarios  User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id                  String                   @id @default(cuid())
+  email               String                   @unique
+  password            String
+  nombre              String
+  apellido            String
+  role                Role                     @default(EMPLEADO)
+  legajo              String?                  @unique
+  externalId          String?                  @unique
+  telefono            String?
+  activo              Boolean                  @default(true)
+  fechaAlta           DateTime                 @default(now())
+  fechaBaja           DateTime?
+  sueldoBasico        Float?
+  valorAntiguedad     Float?
+  areaId              String
+  area                Area                     @relation(fields: [areaId], references: [id])
+  objetivos           Objetivo[]
+  tareas              Tarea[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  asistencias         AsistenciaRegistro[]
+  evaluacionesRecibidas Evaluacion360Respuesta[] @relation("Evaluado")
+  evaluacionesEnviadas  Evaluacion360Respuesta[] @relation("Evaluador")
+  scoreAudits         ScoreAuditLog[]
+  importBatches       ImportBatch[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@index([activo, areaId])
+}
+
+model MetaColectivaSemestre {
+  id          String            @id @default(cuid())
+  periodoId   String
+  tipo        MetaColectivaTipo
+  valorMeta   Float
+  valorActual Float             @default(0)
+  observacion String?
+  updatedAt   DateTime          @updatedAt
+  createdAt   DateTime          @default(now())
+
+  @@unique([periodoId, tipo])
+}
+
+model Objetivo {
+  id          String   @id @default(cuid())
+  titulo      String
+  descripcion String?
+  fechaInicio DateTime
+  fechaFin    DateTime
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kpis        KPI[]
+  tareas      Tarea[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model KPI {
+  id          String   @id @default(cuid())
+  nombre      String
+  valorMeta   Float
+  valorActual Float    @default(0)
+  unidad      String
+  objetivoId  String
+  objetivo    Objetivo @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Tarea {
+  id                  String     @id @default(cuid())
+  titulo              String
+  descripcion         String?
+  estado              TaskStatus @default(PENDIENTE)
+  tiempoEstimado      Int
+  tiempoReal          Int?
+  prioridad           Int        @default(2)
+  fechaLimite         DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  evaluaProductividad Boolean    @default(true)
+  pesoProductividad   Int        @default(1)
+  userId              String
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  objetivoId          String?
+  objetivo            Objetivo?  @relation(fields: [objetivoId], references: [id], onDelete: SetNull)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipo      NotificationType
+  titulo    String
+  mensaje   String
+  leida     Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, leida])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  success   Boolean
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+}
+
+model SystemConfig {
+  clave       String   @id
+  valor       Json
+  descripcion String?
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+}
+
+model ImportBatch {
+  id          String               @id @default(cuid())
+  tipo        ImportBatchTipo
+  archivo     String
+  filasTotal  Int
+  filasOk     Int
+  filasError  Int
+  errores     Json?
+  subidoPorId String
+  subidoPor   User                 @relation(fields: [subidoPorId], references: [id])
+  asistencias AsistenciaRegistro[]
+  createdAt   DateTime             @default(now())
+}
+
+model AsistenciaRegistro {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fecha         DateTime       @db.Date
+  tipo          AsistenciaTipo
+  minutosTarde  Int?
+  observacion   String?
+  periodoId     String
+  importBatchId String?
+  importBatch   ImportBatch?   @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  creadoPorId   String?
+  createdAt     DateTime       @default(now())
+
+  @@unique([userId, fecha])
+  @@index([userId, periodoId])
+}
+
+model ScoreAuditLog {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodoId      String
+  evento         ScoreAuditEvento
+  puntajeBase    Float
+  inasistencias  Int
+  multiplicador  Float
+  puntajeFinal   Float
+  detalle        Json
+  realizadoPorId String?
+  createdAt      DateTime         @default(now())
+
+  @@index([userId, periodoId])
+}
+
+model Evaluacion360Ciclo {
+  id          String                   @id @default(cuid())
+  titulo      String
+  periodoId   String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  activo      Boolean                  @default(true)
+  respuestas  Evaluacion360Respuesta[]
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+}
+
+model Evaluacion360Respuesta {
+  id          String             @id @default(cuid())
+  cicloId     String
+  ciclo       Evaluacion360Ciclo @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+  evaluadoId  String
+  evaluado    User               @relation("Evaluado", fields: [evaluadoId], references: [id], onDelete: Cascade)
+  evaluadorId String
+  evaluador   User               @relation("Evaluador", fields: [evaluadorId], references: [id], onDelete: Cascade)
+  rol         EvaluacionRol
+  competencia String
+  puntaje     Int
+  comentario  String?
+  createdAt   DateTime           @default(now())
+
+  @@unique([cicloId, evaluadoId, evaluadorId, competencia])
+}
