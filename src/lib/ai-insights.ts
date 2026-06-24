@@ -145,8 +145,36 @@ export function generatePersonalInsights(data: {
   temporalEfficiency: { eficiencia: number; desvioPorcentaje: number; tareasCompletadas: number };
   tareasPorEstado: { pendiente: number; enProceso: number; completada: number };
   kpiCompliance: { nombre: string; cumplimiento: number }[];
+  tareasVencidas?: number;
+  tareasVencidasTitulos?: string[];
+  objetivosProximos?: { titulo: string; diasRestantes: number }[];
 }): AiInsight[] {
   const insights: AiInsight[] = [];
+
+  if ((data.tareasVencidas ?? 0) > 0) {
+    const ejemplos = (data.tareasVencidasTitulos ?? []).slice(0, 2).join(", ");
+    insights.push({
+      id: "personal-vencidas",
+      tipo: "alerta",
+      titulo: `${data.tareasVencidas} tarea(s) vencida(s)`,
+      descripcion: ejemplos
+        ? `Tenés tareas fuera de plazo: ${ejemplos}${(data.tareasVencidas ?? 0) > 2 ? " y otras más" : ""}.`
+        : "Tenés tareas que superaron su fecha límite.",
+      prioridad: "alta",
+      accion: "Completá o coordiná con tu gerente en Mis tareas",
+    });
+  }
+
+  for (const obj of data.objetivosProximos ?? []) {
+    insights.push({
+      id: `personal-obj-${obj.titulo.slice(0, 20)}`,
+      tipo: "sugerencia",
+      titulo: `Objetivo próximo a vencer: ${obj.titulo}`,
+      descripcion: `Quedan ${obj.diasRestantes} día(s) para el cierre del objetivo.`,
+      prioridad: "media",
+      accion: "Revisá tus KPIs y tareas vinculadas",
+    });
+  }
 
   if (data.kpiPromedio < 50) {
     insights.push({
@@ -204,5 +232,8 @@ export function generatePersonalInsights(data: {
     });
   }
 
-  return insights;
+  const priorityOrder = { alta: 0, media: 1, baja: 2 };
+  return insights.sort(
+    (a, b) => priorityOrder[a.prioridad] - priorityOrder[b.prioridad]
+  );
 }

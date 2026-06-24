@@ -29,12 +29,20 @@ const STYLES = {
 
 export function AiInsightsPanel() {
   const [insights, setInsights] = useState<AiInsight[]>([]);
+  const [resumenSemanal, setResumenSemanal] = useState<string | null>(null);
+  const [resumenOrigen, setResumenOrigen] = useState<"ollama" | "reglas" | null>(null);
+  const [scope, setScope] = useState<"personal" | "equipo">("equipo");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/ai/insights")
       .then((r) => r.json())
-      .then((data) => setInsights(data.insights ?? []))
+      .then((data) => {
+        setInsights(data.insights ?? []);
+        setScope(data.scope === "personal" ? "personal" : "equipo");
+        setResumenSemanal(data.resumenSemanal ?? null);
+        setResumenOrigen(data.resumenOrigen ?? null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -56,10 +64,24 @@ export function AiInsightsPanel() {
           <CardTitle className="text-lg">Análisis inteligente</CardTitle>
         </div>
         <CardDescription>
-          Recomendaciones automáticas basadas en KPIs, tareas y eficiencia temporal
+          {scope === "personal"
+            ? "Recomendaciones y resumen semanal según tus tareas y KPIs"
+            : "Recomendaciones automáticas basadas en KPIs, tareas y eficiencia temporal"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {scope === "personal" && resumenSemanal && (
+          <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <p className="text-sm font-semibold text-violet-900">Resumen de la semana</p>
+              <Badge variant="outline" className="text-[10px]">
+                {resumenOrigen === "ollama" ? "IA local" : "Automático"}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">{resumenSemanal}</p>
+          </div>
+        )}
+
         {insights.map((insight) => {
           const Icon = ICONS[insight.tipo];
           return (

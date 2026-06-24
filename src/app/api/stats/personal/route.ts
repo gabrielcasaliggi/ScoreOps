@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildEmployeeProductivity } from "@/lib/employee-stats";
+import { calculateKpiCompliance } from "@/lib/productivity";
 import { parsePeriodoParam, periodoToApiPayload } from "@/lib/productivity-period";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
+
+const OBJETIVO_DIAS_ALERTA = 7;
 
 export async function GET(request: NextRequest) {
   const { error, user } = await requireAuth();
@@ -36,6 +39,8 @@ export async function GET(request: NextRequest) {
       (o) => o.fechaInicio <= period.fin && o.fechaFin >= period.inicio
     );
 
+    const now = new Date();
+
     return apiSuccess({
       user: {
         id: empleado.id,
@@ -48,14 +53,28 @@ export async function GET(request: NextRequest) {
       puntajePremio: productivity.productivityBonus.puntajePremio,
       tareasPorEstado,
       periodo: periodoToApiPayload(period),
-      objetivos: objetivosEnPeriodo.map((o) => ({
-        id: o.id,
-        titulo: o.titulo,
-        fechaInicio: o.fechaInicio,
-        fechaFin: o.fechaFin,
-        kpisCount: o.kpis.length,
-        tareasCount: o.tareas.length,
-      })),
+      objetivos: objetivosEnPeriodo.map((o) => {
+        const kpis = o.kpis.map(calculateKpiCompliance);
+        const kpiPromedio =
+          kpis.length > 0
+            ? Math.round((kpis.reduce((s, k) => s + k.cumplimiento, 0) / kpis.length) * 10) / 10
+            : 0;
+        const diasRestantes = Math.ceil(
+          (o.fechaFin.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return {
+          id: o.id,
+          titulo: o.titulo,
+          descripcion: o.descripcion,
+          fechaInicio: o.fechaInicio,
+          fechaFin: o.fechaFin,
+          kpisCount: o.kpis.length,
+          tareasCount: o.tareas.length,
+          kpiPromedio,
+          diasRestantes,
+          proximoVencer: diasRestantes > 0 && diasRestantes <= OBJETIVO_DIAS_ALERTA,
+        };
+      }),
     });
   } catch (err) {
     console.error("[Stats] Error personal:", err);

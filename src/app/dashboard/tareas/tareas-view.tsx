@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ManagerKanban } from "@/components/tasks/manager-kanban";
+import { EmployeeKanban } from "@/components/tasks/employee-kanban";
 import { TareaFechaLimiteBadge } from "@/components/tasks/tarea-fecha-limite";
 import { PageHeader } from "@/components/layout/page-header";
 import { formatMinutes } from "@/lib/utils";
@@ -15,6 +16,7 @@ import { getTareaLimiteStatus } from "@/lib/task-utils";
 interface Tarea {
   id: string;
   titulo: string;
+  descripcion?: string | null;
   estado: string;
   tiempoEstimado: number;
   tiempoReal: number | null;
@@ -231,14 +233,57 @@ export function TareasView() {
               </div>
             </div>
           )}
-          {isManager && vista === "kanban" ? (
-            <ManagerKanban
-              tareas={tareasVisibles as Parameters<typeof ManagerKanban>[0]["tareas"]}
-              usuarios={usuarios}
-              objetivos={objetivos}
-              areaNombre={areaNombre}
-              onRefresh={loadTareas}
-            />
+
+          {!isManager && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <Button
+                variant={soloVencidas ? "destructive" : "outline"}
+                size="sm"
+                className="rounded-xl"
+                onClick={() => setSoloVencidas((v) => !v)}
+              >
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Vencidas
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant={vista === "kanban" ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => setVista("kanban")}
+                >
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Kanban
+                </Button>
+                <Button
+                  variant={vista === "lista" ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-xl bg-white/80"
+                  onClick={() => setVista("lista")}
+                >
+                  <List className="mr-2 h-4 w-4" />
+                  Lista
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {vista === "kanban" ? (
+            isManager ? (
+              <ManagerKanban
+                tareas={tareasVisibles as Parameters<typeof ManagerKanban>[0]["tareas"]}
+                usuarios={usuarios}
+                objetivos={objetivos}
+                areaNombre={areaNombre}
+                onRefresh={loadTareas}
+              />
+            ) : (
+              <EmployeeKanban
+                tareas={tareas as Parameters<typeof EmployeeKanban>[0]["tareas"]}
+                onRefresh={loadTareas}
+                soloVencidas={soloVencidas}
+              />
+            )
           ) : (
             <>
               <div className="mb-4 flex flex-wrap gap-2">

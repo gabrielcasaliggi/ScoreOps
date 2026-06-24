@@ -3,7 +3,20 @@ import { buildEmployeeProductivity } from "@/lib/employee-stats";
 import { calculateKpiCompliance, calculateTemporalEfficiency } from "@/lib/productivity";
 import { getSemesterPeriod } from "@/lib/productivity-period";
 import { generatePersonalInsights, generateTeamInsights } from "@/lib/ai-insights";
+import { generateWeeklySummary } from "@/lib/llm-summary";
+import { getTareaLimiteStatus } from "@/lib/task-utils";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
+
+const OBJETIVO_DIAS_ALERTA = 7;
+
+function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - diff);
+  return d;
+}
 
 export async function GET() {
   const { error, user } = await requireAuth();
@@ -41,6 +54,9 @@ export async function GET() {
 
     if (!empleado) return apiError("Usuario no encontrado", 404);
 
+    const now = new Date();
+    const weekStart = startOfWeek(now);
+
     const allKpis = empleado.objetivos.flatMap((o) => o.kpis);
     const kpiCompliance = allKpis.map(calculateKpiCompliance);
     const kpiPromedio =
@@ -55,14 +71,53 @@ export async function GET() {
       completada: empleado.tareas.filter((t) => t.estado === "COMPLETADA").length,
     };
 
+    const tareasVencidasList = empleado.tareas.filter(
+      (t) => getTareaLimiteStatus(t.fechaLimite, t.estado).vencida
+    );
+
+    const objetivosProximos = empleado.objetivos
+      .map((o) => {
+        const diasRestantes = Math.ceil(
+          (o.fechaFin.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return { titulo: o.titulo, diasRestantes };
+      })
+      .filter((o) => o.diasRestantes > 0 && o.diasRestantes <= OBJETIVO_DIAS_ALERTA);
+
     const insights = generatePersonalInsights({
       kpiPromedio: Math.round(kpiPromedio * 10) / 10,
       temporalEfficiency,
       tareasPorEstado,
       kpiCompliance,
+      tareasVencidas: tareasVencidasList.length,
+      tareasVencidasTitulos: tareasVencidasList.map((t) => t.titulo),
+      objetivosProximos,
     });
 
-    return apiSuccess({ insights, scope: "personal" });
+    const tareasCompletadasSemana = empleado.tareas.filter(
+      (t) =>
+        t.estado === "COMPLETADA" &&
+        t.completedAt &&
+        t.completedAt >= weekStart
+    ).length;
+
+    const resumenSemanal = await generateWeeklySummary({
+      nombre: `${empleado.nombre} ${empleado.apellido}`,
+      kpiPromedio,
+      tareasCompletadasSemana,
+      tareasVencidas: tareasVencidasList.length,
+      tareasEnProceso: tareasPorEstado.enProceso,
+      tareasPendientes: tareasPorEstado.pendiente,
+      objetivosProximos: objetivosProximos.map((o) => o.titulo),
+      eficiencia: temporalEfficiency.eficiencia,
+    });
+
+    return apiSuccess({
+      insights,
+      scope: "personal",
+      resumenSemanal: resumenSemanal.texto,
+      resumenOrigen: resumenSemanal.origen,
+    });
   } catch (err) {
     console.error("[AI] Error:", err);
     return apiError("Error al generar análisis", 500);

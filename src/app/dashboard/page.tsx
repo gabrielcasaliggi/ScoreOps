@@ -15,6 +15,7 @@ export default function DashboardPage() {
     productivityBonus: Parameters<typeof EmployeeDashboard>[0]["productivityBonus"];
     periodo: Parameters<typeof EmployeeDashboard>[0]["periodo"];
     tareasPorEstado: Parameters<typeof EmployeeDashboard>[0]["tareasPorEstado"];
+    objetivos: Parameters<typeof EmployeeDashboard>[0]["objetivos"];
   } | null>(null);
   const [tareas, setTareas] = useState<Parameters<typeof EmployeeDashboard>[0]["tareas"]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,15 @@ export default function DashboardPage() {
       }
       const stats = await statsRes.json();
       const tareasData = await tareasRes.json();
-      setPersonalData(stats);
+      setPersonalData({
+        kpiCompliance: stats.kpiCompliance,
+        kpiPromedio: stats.kpiPromedio,
+        temporalEfficiency: stats.temporalEfficiency,
+        productivityBonus: stats.productivityBonus,
+        periodo: stats.periodo,
+        tareasPorEstado: stats.tareasPorEstado,
+        objetivos: stats.objetivos ?? [],
+      });
       setTareas(Array.isArray(tareasData) ? tareasData : []);
     } catch {
       setLoadError("Error de conexión. Verificá tu red e intentá de nuevo.");
