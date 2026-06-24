@@ -53,6 +53,8 @@ La app queda disponible en `http://localhost:3000`.
 | `DATABASE_URL` | Cadena de conexión PostgreSQL | Sí |
 | `SESSION_SECRET` | Secreto para firmar cookies de sesión (mín. 32 caracteres aleatorios) | Sí |
 | `NODE_ENV` | `development` o `production` | Sí |
+| `APP_URL` | URL pública de la app (ej. `http://181.41.240.16`). Define si la cookie de sesión usa `Secure` | Sí en producción |
+| `SESSION_COOKIE_SECURE` | Forzar `Secure` en la cookie (opcional; si no se define, se infiere de `APP_URL`) | No |
 | `INTEGRATION_API_KEY` | Clave para sincronización RRHH externa | No |
 
 Generar un secreto seguro:
@@ -75,10 +77,11 @@ openssl rand -base64 32
 
 | Módulo | Ruta | Roles |
 |--------|------|-------|
-| Resumen / tablero personal | `/dashboard` | Todos |
-| Coordinación y estadísticas | `/dashboard/equipo` | Gerente, Admin |
+| Inicio operativo / tablero personal | `/dashboard` | Todos (gerente/admin ven resumen operativo) |
 | Tareas / Kanban | `/dashboard/tareas` | Todos |
 | Objetivos y KPIs | `/dashboard/objetivos` | Gerente, Admin |
+| Equipos / Mi equipo | `/dashboard/equipo` | Gerente, Admin |
+| Premio Art. 49 | `/dashboard/premio` | Gerente, Admin |
 | Asistencia | `/dashboard/asistencia` | Gerente, Admin |
 | Evaluaciones 360° | `/dashboard/evaluaciones` | Todos |
 | Empleados | `/dashboard/empleados` | Admin |
@@ -96,6 +99,7 @@ openssl rand -base64 32
 ### Checklist previo al deploy
 
 - [ ] `SESSION_SECRET` único y seguro en `.env`
+- [ ] `APP_URL` con la URL real de acceso (ej. `http://IP` sin HTTPS o `https://dominio` con TLS)
 - [ ] `NODE_ENV=production` en `.env` y en PM2
 - [ ] Contraseña de PostgreSQL distinta a la de desarrollo
 - [ ] **No ejecutar** `npm run db:seed` (o usar solo datos reales)

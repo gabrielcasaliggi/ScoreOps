@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import {
+  AlertTriangle,
   Circle,
   CircleDot,
   GripVertical,
@@ -22,6 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn, formatMinutes } from "@/lib/utils";
+import { countTareasVencidas, toFechaLimiteIso } from "@/lib/task-utils";
+import { TareaFechaLimiteBadge, tareaCardLimiteClass } from "@/components/tasks/tarea-fecha-limite";
 
 type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "COMPLETADA";
 
@@ -87,7 +90,7 @@ const COLUMNS: {
     label: "Completada",
     accent: "border-t-emerald-500",
     icon: Sparkles,
-    hint: "Cuenta al premio",
+    hint: "Cerradas",
   },
 ];
 
@@ -102,6 +105,7 @@ const emptyForm = {
   tiempoEstimado: "60",
   userId: "",
   objetivoId: "",
+  fechaLimite: "",
   evaluaProductividad: true,
   pesoProductividad: "2",
 };
@@ -155,6 +159,7 @@ export function ManagerKanban({
         tiempoEstimado: Number(form.tiempoEstimado),
         userId: form.userId,
         objetivoId: form.objetivoId || undefined,
+        fechaLimite: toFechaLimiteIso(form.fechaLimite),
         evaluaProductividad: form.evaluaProductividad,
         pesoProductividad: Number(form.pesoProductividad),
       }),
@@ -170,8 +175,18 @@ export function ManagerKanban({
     setDropTarget(null);
   }, []);
 
+  const vencidasCount = countTareasVencidas(filtered);
+
   return (
     <div className="space-y-5">
+      {vencidasCount > 0 && (
+        <div className="flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <p>
+            <strong>{vencidasCount}</strong> tarea(s) con fecha límite vencida en esta vista
+          </p>
+        </div>
+      )}
       <div className="glass-card flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4">
         <div>
           {areaNombre && (
@@ -181,8 +196,8 @@ export function ManagerKanban({
             </p>
           )}
           <p className="text-xs text-muted-foreground mt-1 max-w-md">
-            Arrastrá tarjetas entre columnas. Las marcadas con{" "}
-            <span className="font-medium text-violet-600">Premio</span> alimentan el pago semestral.
+            Arrastrá tarjetas entre columnas. Asigná fecha límite para detectar atrasos. Las
+            tareas marcadas con Premio impactan el cálculo semestral.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -266,6 +281,7 @@ export function ManagerKanban({
                     onDragEnd={onDragEnd}
                     className={cn(
                       "kanban-card p-3",
+                      tareaCardLimiteClass(tarea.fechaLimite, tarea.estado),
                       draggingId === tarea.id && "kanban-card--dragging",
                       loadingId === tarea.id && "pointer-events-none opacity-60"
                     )}
@@ -299,6 +315,10 @@ export function ManagerKanban({
                           >
                             {PRIORITY_LABEL[tarea.prioridad]}
                           </Badge>
+                          <TareaFechaLimiteBadge
+                            fechaLimite={tarea.fechaLimite}
+                            estado={tarea.estado}
+                          />
                           {tarea.evaluaProductividad && (
                             <Badge
                               variant="outline"
@@ -331,8 +351,7 @@ export function ManagerKanban({
           <DialogHeader>
             <DialogTitle>Asignar tarea al equipo</DialogTitle>
             <DialogDescription>
-              Las tareas evaluables completadas en el semestre suman al premio (60% KPI + 40%
-              eficiencia).
+              Vinculá la tarea a un empleado y, si aplica, a un objetivo del semestre.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -386,6 +405,15 @@ export function ManagerKanban({
                 className="rounded-xl"
                 value={form.tiempoEstimado}
                 onChange={(e) => setForm({ ...form, tiempoEstimado: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha límite (opcional)</Label>
+              <Input
+                type="date"
+                className="rounded-xl"
+                value={form.fechaLimite}
+                onChange={(e) => setForm({ ...form, fechaLimite: e.target.value })}
               />
             </div>
             <label className="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50/50 p-3 cursor-pointer">

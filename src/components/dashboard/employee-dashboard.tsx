@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/ui/stat-card";
 import { TaskTimer } from "@/components/tasks/task-timer";
+import { TareaFechaLimiteBadge, tareaCardLimiteClass } from "@/components/tasks/tarea-fecha-limite";
 import { PremioArt49Breakdown } from "@/components/dashboard/premio-art49-breakdown";
-import { formatMinutes, formatPercent } from "@/lib/utils";
+import { formatMinutes, formatPercent, cn } from "@/lib/utils";
 import type { PremioArt49 } from "@/lib/art49-types";
 
 type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "COMPLETADA";
@@ -26,6 +27,7 @@ interface Tarea {
   completedAt: string | null;
   evaluaProductividad: boolean;
   pesoProductividad: number;
+  fechaLimite?: string | null;
   objetivo?: { titulo: string } | null;
 }
 
@@ -117,35 +119,12 @@ export function EmployeeDashboard({
 
   return (
     <div className="space-y-6">
-      {periodo && (
-        <div className="rounded-2xl border border-violet-200/80 bg-gradient-to-r from-violet-50 to-indigo-50/50 px-5 py-4 text-sm shadow-sm">
-          <p>
-            <span className="font-semibold text-violet-800">
-              Premio semestral — {periodo.mesesCalculoLabel ?? periodo.label}
-            </span>
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            {periodo.liquidacionDescripcion ?? `Pago con haberes de ${periodo.mesPagoLabel}`}
-            {periodo.liquidacionPendiente && periodo.diasHastaLiquidacion > 0 && (
-              <span> · Faltan {periodo.diasHastaLiquidacion} días</span>
-            )}
-            {!periodo.liquidacionPendiente && (
-              <span> · Ventana de cobro del semestre</span>
-            )}
-          </p>
-        </div>
-      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Premio Art. 49"
-          value={`${puntajePremio}%`}
-          hint={
-            productivityBonus?.art49?.montoTotal
-              ? `$${productivityBonus.art49.montoTotal.toLocaleString("es-AR")} del sueldo ref.`
-              : "Del sueldo básico + antigüedad"
-          }
-          icon={Award}
-          variant="violet"
+          label="Tareas completadas"
+          value={tareasPorEstado.completada}
+          hint={`${tareasPorEstado.enProceso} en proceso · ${tareasPorEstado.pendiente} pendientes`}
+          variant="slate"
         />
         <StatCard
           label="Cumplimiento KPI"
@@ -153,49 +132,23 @@ export function EmployeeDashboard({
           variant="emerald"
         />
         <StatCard
-          label="Eficiencia evaluable"
+          label="Eficiencia"
           value={formatPercent(
             productivityBonus?.eficienciaEvaluable ?? temporalEfficiency.eficiencia
           )}
           variant="blue"
         />
         <StatCard
-          label="Tareas completadas"
-          value={tareasPorEstado.completada}
-          variant="slate"
+          label="Premio semestral"
+          value={`${puntajePremio}%`}
+          hint="Art. 49 — ver detalle abajo"
+          icon={Award}
+          variant="violet"
         />
       </div>
 
-      {productivityBonus?.art49 && (
-        <PremioArt49Breakdown art49={productivityBonus.art49} />
-      )}
-
-      {kpiCompliance.length > 0 && (
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="text-base">Mis KPIs</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {kpiCompliance.map((kpi) => (
-              <div key={kpi.kpiId} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{kpi.nombre}</span>
-                  <span className="text-muted-foreground tabular-nums">
-                    {kpi.valorActual} / {kpi.valorMeta} {kpi.unidad}
-                  </span>
-                </div>
-                <Progress value={kpi.cumplimiento} className="h-2.5 rounded-full" />
-                <p className="text-xs text-right font-medium text-emerald-600">
-                  {formatPercent(kpi.cumplimiento)}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
       <div>
-        <h2 className="mb-1 text-lg font-bold">Mi tablero</h2>
+        <h2 className="mb-1 text-lg font-bold">Mi tablero de tareas</h2>
         <p className="mb-4 text-sm text-muted-foreground">
           Iniciá una tarea para registrar el tiempo. Los KPIs y la eficiencia son indicadores
           internos de gestión; el premio semestral se calcula según Art. 49.
@@ -222,7 +175,7 @@ export function EmployeeDashboard({
                 {tareas
                   .filter((t) => t.estado === col.key)
                   .map((tarea) => (
-                    <div key={tarea.id} className="kanban-card p-4 space-y-2">
+                    <div key={tarea.id} className={cn("kanban-card p-4 space-y-2", tareaCardLimiteClass(tarea.fechaLimite, tarea.estado))}>
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-medium text-sm">{tarea.titulo}</p>
                           <div className="flex flex-col items-end gap-1">
@@ -247,6 +200,7 @@ export function EmployeeDashboard({
                             )}
                           </div>
                         </div>
+                        <TareaFechaLimiteBadge fechaLimite={tarea.fechaLimite} estado={tarea.estado} />
                         {tarea.objetivo && (
                           <p className="text-xs text-muted-foreground">
                             Objetivo: {tarea.objetivo.titulo}
@@ -303,6 +257,46 @@ export function EmployeeDashboard({
           ))}
         </div>
       </div>
+
+      {kpiCompliance.length > 0 && (
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="text-base">Mis KPIs y objetivos</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {kpiCompliance.map((kpi) => (
+              <div key={kpi.kpiId} className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">{kpi.nombre}</span>
+                  <span className="text-muted-foreground tabular-nums">
+                    {kpi.valorActual} / {kpi.valorMeta} {kpi.unidad}
+                  </span>
+                </div>
+                <Progress value={kpi.cumplimiento} className="h-2.5 rounded-full" />
+                <p className="text-xs text-right font-medium text-emerald-600">
+                  {formatPercent(kpi.cumplimiento)}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {productivityBonus?.art49 && (
+        <details className="rounded-2xl border border-violet-200/60 bg-violet-50/30 open:pb-2">
+          <summary className="cursor-pointer px-5 py-4 font-semibold text-violet-900 list-none flex items-center justify-between">
+            <span>Premio semestral Art. 49 ({puntajePremio}%)</span>
+            {periodo && (
+              <span className="text-xs font-normal text-muted-foreground">
+                Pago {periodo.mesPagoLabel}
+              </span>
+            )}
+          </summary>
+          <div className="px-2 pb-2">
+            <PremioArt49Breakdown art49={productivityBonus.art49} />
+          </div>
+        </details>
+      )}
     </div>
   );
 }

@@ -64,6 +64,7 @@ cat > "$PROJECT_DIR/.env" <<ENV
 DATABASE_URL="${DATABASE_URL}"
 SESSION_SECRET="$(openssl rand -hex 32 2>/dev/null || echo "cambiar-secreto-$(date +%s)")"
 NODE_ENV="development"
+APP_URL="http://localhost:3000"
 ENV
 
 echo "  .env actualizado en: $PROJECT_DIR/.env"

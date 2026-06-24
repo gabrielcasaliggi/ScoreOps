@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
-  BarChart3,
+  Award,
   CalendarClock,
   ChevronDown,
   ClipboardCheck,
@@ -44,13 +44,15 @@ export function AppShell({ user, children }: AppShellProps) {
 
   const primaryNav: NavItem[] = isManager
     ? [
-        { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
+        { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
+        { href: "/dashboard/tareas", label: "Tareas", icon: ClipboardList },
+        { href: "/dashboard/objetivos", label: "Objetivos", icon: Target },
         {
           href: "/dashboard/equipo",
-          label: isAdmin ? "Coordinación" : "Mi área",
-          icon: BarChart3,
+          label: isAdmin ? "Equipos" : "Mi equipo",
+          icon: Users,
         },
-        { href: "/dashboard/tareas", label: "Kanban", icon: ClipboardList },
+        { href: "/dashboard/premio", label: "Premio", icon: Award },
       ]
     : [
         { href: "/dashboard", label: "Mi tablero", icon: LayoutDashboard },
@@ -59,7 +61,6 @@ export function AppShell({ user, children }: AppShellProps) {
 
   const moreNav: NavItem[] = isManager
     ? [
-        { href: "/dashboard/objetivos", label: "Objetivos", icon: Target },
         { href: "/dashboard/asistencia", label: "Asistencia", icon: CalendarClock },
         { href: "/dashboard/evaluaciones", label: "Evaluaciones", icon: Star },
         ...(isAdmin

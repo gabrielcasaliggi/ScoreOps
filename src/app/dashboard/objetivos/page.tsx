@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { PageHeader } from "@/components/layout/page-header";
 import { formatPercent } from "@/lib/utils";
 
 interface Usuario {
@@ -174,19 +175,17 @@ export default function ObjetivosPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Objetivos y KPIs</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Gestiona metas y métricas de éxito por empleado
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo objetivo
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={<h1 className="text-2xl font-bold tracking-tight">Objetivos y KPIs</h1>}
+        description="Metas semestrales por persona, indicadores de avance y vínculo con tareas"
+        actions={
+          <Button onClick={openCreate} className="rounded-xl">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo objetivo
+          </Button>
+        }
+      />
 
       <div className="space-y-4">
         {objetivos.length === 0 && (

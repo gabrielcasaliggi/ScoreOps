@@ -75,12 +75,24 @@ export function toSessionUser(
   };
 }
 
+function isSessionCookieSecure(): boolean {
+  const explicit = process.env.SESSION_COOKIE_SECURE;
+  if (explicit === "true") return true;
+  if (explicit === "false") return false;
+
+  const appUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl?.startsWith("https://")) return true;
+  if (appUrl?.startsWith("http://")) return false;
+
+  return process.env.NODE_ENV === "production";
+}
+
 export async function createSession(user: SessionUser): Promise<void> {
   const token = createSessionToken(user.id);
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSessionCookieSecure(),
     sameSite: "lax",
     maxAge: SESSION_MAX_AGE,
     path: "/",
