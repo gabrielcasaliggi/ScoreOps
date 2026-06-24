@@ -62,7 +62,7 @@ export function LoginForm() {
 
   if (showForgot) {
     return (
-      <Card className="w-full max-w-md glass-card rounded-3xl">
+      <Card className="glass-card w-full max-w-md animate-page-enter rounded-3xl" style={{ animationDelay: "120ms" }}>
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Recuperar acceso</CardTitle>
           <CardDescription>
@@ -103,7 +103,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md glass-card border-white/60 shadow-2xl rounded-3xl">
+    <Card className="glass-card w-full max-w-md animate-page-enter rounded-3xl border-white/60 shadow-2xl" style={{ animationDelay: "120ms" }}>
       <CardHeader className="text-center pb-2">
         <CardTitle className="text-2xl font-bold">Ingresar a {BRAND.name}</CardTitle>
         <CardDescription>

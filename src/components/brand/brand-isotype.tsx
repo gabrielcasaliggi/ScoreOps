@@ -94,7 +94,7 @@ export function BrandIsotype({
           strokeLinecap="round"
           fill="none"
         />
-        <circle cx="35" cy="12" r="2.5" fill="#6ee7b7" />
+        <circle cx="35" cy="12" r="2.5" fill="#6ee7b7" className="live-dot" />
         <circle cx="35" cy="12" r="1.1" fill="white" fillOpacity="0.95" />
       </g>
     </svg>

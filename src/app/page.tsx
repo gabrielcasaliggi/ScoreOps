@@ -11,11 +11,11 @@ export default async function HomePage() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4 app-mesh-bg">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute -right-16 bottom-20 h-80 w-80 rounded-full bg-emerald-400/15 blur-3xl" />
+        <div className="animate-blob absolute -left-20 top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+        <div className="animate-blob-delayed absolute -right-16 bottom-20 h-80 w-80 rounded-full bg-emerald-400/15 blur-3xl" />
       </div>
-      <div className="relative mb-8 text-center">
-        <BrandIsotype size="lg" elevated className="mx-auto mb-4" />
+      <div className="relative mb-8 animate-page-enter text-center">
+        <BrandIsotype size="lg" elevated className="mx-auto mb-4 animate-float-icon" />
         <h1 className="text-3xl font-bold tracking-tight">{BRAND.name}</h1>
         <p className="mt-2 text-muted-foreground text-sm max-w-sm">
           {BRAND.tagline}

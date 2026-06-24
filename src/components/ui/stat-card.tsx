@@ -56,7 +56,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "glass-card stat-shine rounded-2xl p-5 ring-1 transition-all duration-200 hover:-translate-y-0.5",
+        "glass-card stat-shine group rounded-2xl p-5 ring-1 transition-all duration-200 hover:-translate-y-0.5",
         styles.ring,
         className
       )}
@@ -76,11 +76,11 @@ export function StatCard({
         {Icon && (
           <div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110",
               styles.icon
             )}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="icon-hover-pop h-5 w-5" />
           </div>
         )}
       </div>

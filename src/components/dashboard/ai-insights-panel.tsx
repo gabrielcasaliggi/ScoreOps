@@ -57,10 +57,10 @@ export function AiInsightsPanel() {
   }
 
   return (
-    <Card>
+    <Card className="animate-fade-in">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-violet-600" />
+          <Sparkles className="h-5 w-5 text-violet-600 animate-sparkles" />
           <CardTitle className="text-lg">Análisis inteligente</CardTitle>
         </div>
         <CardDescription>
@@ -71,7 +71,7 @@ export function AiInsightsPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         {scope === "personal" && resumenSemanal && (
-          <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-4">
+          <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-4 animate-fade-in">
             <div className="mb-2 flex items-center gap-2">
               <p className="text-sm font-semibold text-violet-900">Resumen de la semana</p>
               <Badge variant="outline" className="text-[10px]">
@@ -82,6 +82,7 @@ export function AiInsightsPanel() {
           </div>
         )}
 
+        <div className="animate-stagger space-y-3">
         {insights.map((insight) => {
           const Icon = ICONS[insight.tipo];
           return (
@@ -109,6 +110,7 @@ export function AiInsightsPanel() {
             </div>
           );
         })}
+        </div>
       </CardContent>
     </Card>
   );

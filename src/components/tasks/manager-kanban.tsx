@@ -181,7 +181,7 @@ export function ManagerKanban({
     <div className="space-y-5">
       {vencidasCount > 0 && (
         <div className="flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <AlertTriangle className="h-5 w-5 shrink-0 animate-float-icon" />
           <p>
             <strong>{vencidasCount}</strong> tarea(s) con fecha límite vencida en esta vista
           </p>
@@ -223,7 +223,7 @@ export function ManagerKanban({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 animate-stagger">
         {COLUMNS.map((col) => {
           const columnTasks = filtered.filter((t) => t.estado === col.key);
           const ColIcon = col.icon;

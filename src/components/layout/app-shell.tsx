@@ -96,8 +96,8 @@ export function AppShell({ user, children }: AppShellProps) {
       <header className="sticky top-0 z-50 border-b border-white/60 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-3 lg:gap-4">
-            <Link href="/dashboard" className="flex shrink-0 items-center gap-2.5">
-              <BrandIsotype size="sm" />
+            <Link href="/dashboard" className="group flex shrink-0 items-center gap-2.5 transition-transform duration-300 hover:scale-[1.02]">
+              <BrandIsotype size="sm" className="transition-transform duration-300 group-hover:scale-105" />
               <span className="hidden font-bold tracking-tight sm:block">
                 <span className="text-base lg:text-lg">{BRAND.name}</span>
               </span>
@@ -108,8 +108,8 @@ export function AppShell({ user, children }: AppShellProps) {
                 const Icon = item.icon;
                 const active = pathname === item.href;
                 return (
-                  <Link key={item.href} href={item.href} className={navLinkClass(active)}>
-                    <Icon className="h-4 w-4 shrink-0" />
+                  <Link key={item.href} href={item.href} className={cn(navLinkClass(active), "group")}>
+                    <Icon className={cn("h-4 w-4 shrink-0 icon-hover-pop", active && "nav-icon-active")} />
                     <span className="whitespace-nowrap">{item.label}</span>
                   </Link>
                 );
@@ -217,7 +217,7 @@ export function AppShell({ user, children }: AppShellProps) {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 animate-page-enter">{children}</main>
     </div>
   );
 }

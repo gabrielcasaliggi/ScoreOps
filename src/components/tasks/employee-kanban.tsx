@@ -79,7 +79,7 @@ export function EmployeeKanban({ tareas, onRefresh, soloVencidas = false }: Empl
   return (
     <div className="space-y-4">
       {taskError && <p className="text-sm text-destructive">{taskError}</p>}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 animate-stagger">
         {COLUMNS.map((col) => {
           const columnTasks = visibles.filter((t) => t.estado === col.key);
           return (

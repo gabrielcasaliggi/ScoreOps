@@ -66,11 +66,11 @@ export function NotificationBell() {
         size="icon"
         onClick={() => setOpen(!open)}
         title="Notificaciones"
-        className="relative"
+        className={cn("relative rounded-xl", noLeidas > 0 && "animate-bell-ring")}
       >
-        <Bell className="h-4 w-4" />
+        <Bell className={cn("h-4 w-4 transition-transform", open && "scale-110")} />
         {noLeidas > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+          <span className="animate-badge-pulse absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
             {noLeidas > 9 ? "9+" : noLeidas}
           </span>
         )}
@@ -78,8 +78,8 @@ export function NotificationBell() {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border bg-background shadow-lg">
+          <div className="fixed inset-0 z-40 animate-fade-in" onClick={() => setOpen(false)} />
+          <div className="animate-dropdown-in absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border bg-background shadow-lg">
             <div className="flex items-center justify-between border-b p-3">
               <span className="font-semibold text-sm">Notificaciones</span>
               {noLeidas > 0 && (
