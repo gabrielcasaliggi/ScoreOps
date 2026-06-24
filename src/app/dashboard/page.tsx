@@ -36,27 +36,49 @@ export default function DashboardPage() {
   } | null>(null);
   const [tareas, setTareas] = useState<Parameters<typeof EmployeeDashboard>[0]["tareas"]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const loadData = useCallback(async () => {
-    const meRes = await fetch("/api/auth/me");
-    const me = await meRes.json();
-    setRole(me.user?.role ?? null);
+    setLoadError("");
+    setLoading(true);
 
-    if (me.user?.role === "ADMINISTRADOR" || me.user?.role === "GERENTE") {
-      const statsRes = await fetch("/api/stats/equipo?periodo=actual");
-      const stats = await statsRes.json();
-      setManagerSummary({ resumen: stats.resumen, periodo: stats.periodo });
-    } else {
-      const [statsRes, tareasRes] = await Promise.all([
-        fetch("/api/stats/personal?periodo=actual"),
-        fetch("/api/tareas"),
-      ]);
-      const stats = await statsRes.json();
-      const tareasData = await tareasRes.json();
-      setPersonalData(stats);
-      setTareas(tareasData);
+    try {
+      const meRes = await fetch("/api/auth/me");
+      if (!meRes.ok) {
+        setLoadError("No se pudo cargar tu sesión. Intentá de nuevo.");
+        return;
+      }
+
+      const me = await meRes.json();
+      setRole(me.user?.role ?? null);
+
+      if (me.user?.role === "ADMINISTRADOR" || me.user?.role === "GERENTE") {
+        const statsRes = await fetch("/api/stats/equipo?periodo=actual");
+        if (!statsRes.ok) {
+          setLoadError("No se pudieron cargar las estadísticas del equipo.");
+          return;
+        }
+        const stats = await statsRes.json();
+        setManagerSummary({ resumen: stats.resumen, periodo: stats.periodo });
+      } else {
+        const [statsRes, tareasRes] = await Promise.all([
+          fetch("/api/stats/personal?periodo=actual"),
+          fetch("/api/tareas"),
+        ]);
+        if (!statsRes.ok || !tareasRes.ok) {
+          setLoadError("No se pudieron cargar tus datos. Intentá de nuevo.");
+          return;
+        }
+        const stats = await statsRes.json();
+        const tareasData = await tareasRes.json();
+        setPersonalData(stats);
+        setTareas(Array.isArray(tareasData) ? tareasData : []);
+      }
+    } catch {
+      setLoadError("Error de conexión. Verificá tu red e intentá de nuevo.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -72,8 +94,28 @@ export default function DashboardPage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
+        <p className="text-sm text-destructive">{loadError}</p>
+        <Button variant="outline" className="rounded-xl" onClick={loadData}>
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
+
   if (role === "ADMINISTRADOR" || role === "GERENTE") {
-    if (!managerSummary) return null;
+    if (!managerSummary) {
+      return (
+        <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
+          <p className="text-sm text-muted-foreground">No hay datos disponibles.</p>
+          <Button variant="outline" className="rounded-xl" onClick={loadData}>
+            Reintentar
+          </Button>
+        </div>
+      );
+    }
     const isAdmin = role === "ADMINISTRADOR";
     return (
       <div className="space-y-6">
@@ -132,7 +174,16 @@ export default function DashboardPage() {
     );
   }
 
-  if (!personalData) return null;
+  if (!personalData) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
+        <p className="text-sm text-muted-foreground">No hay datos disponibles.</p>
+        <Button variant="outline" className="rounded-xl" onClick={loadData}>
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

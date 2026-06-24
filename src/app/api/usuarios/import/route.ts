@@ -57,18 +57,31 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const passwordHash = await bcrypt.hash(record.password || "password123", 10);
+        const email = record.email.toLowerCase();
+        const existing = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+
+        if (!existing && !record.password?.trim()) {
+          errores.push({ fila, motivo: "Contraseña requerida para usuarios nuevos" });
+          continue;
+        }
+
+        const passwordHash = record.password?.trim()
+          ? await bcrypt.hash(record.password, 10)
+          : undefined;
 
         await prisma.user.upsert({
-          where: { email: record.email.toLowerCase() },
+          where: { email },
           create: {
-            email: record.email.toLowerCase(),
+            email,
             nombre: record.nombre,
             apellido: record.apellido,
             legajo: record.legajo || null,
             role,
             areaId,
-            password: passwordHash,
+            password: passwordHash!,
             activo: true,
           },
           update: {
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
             areaId,
             activo: true,
             fechaBaja: null,
-            ...(record.password ? { password: passwordHash } : {}),
+            ...(passwordHash ? { password: passwordHash } : {}),
           },
         });
         filasOk++;

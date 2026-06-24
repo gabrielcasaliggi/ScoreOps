@@ -147,11 +147,13 @@ export function LoginForm() {
             {loading ? "Ingresando..." : "Iniciar sesión"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          Demo: admin@vertia.local / gerente@vertia.local / empleado@vertia.local
-          <br />
-          Contraseña: password123
-        </p>
+        {process.env.NODE_ENV !== "production" && (
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Demo: admin@vertia.local / gerente@vertia.local / empleado@vertia.local
+            <br />
+            Contraseña: password123
+          </p>
+        )}
         <p className="mt-2 text-center text-xs">
           <Link href="/reset-password" className="text-primary hover:underline">
             Tengo un token de restablecimiento

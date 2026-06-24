@@ -61,7 +61,7 @@ export function rowToRecord(headers: string[], row: string[]): Record<string, st
 
 export const EMPLEADOS_CSV_TEMPLATE =
   "legajo,email,nombre,apellido,area,role,password\n" +
-  "1001,nuevo@vertia.local,Juan,Pérez,Operaciones,EMPLEADO,password123\n";
+  "1001,nuevo@cooperativa.local,Juan,Pérez,Operaciones,EMPLEADO,TuClaveSegura123\n";
 
 export const ASISTENCIA_CSV_TEMPLATE =
   "legajo,fecha,tipo,minutos_tarde,observacion\n" +

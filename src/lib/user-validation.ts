@@ -6,6 +6,8 @@ const optionalPassword = z
   .transform((v) => (v && v.length > 0 ? v : undefined))
   .pipe(z.string().min(6, "Mínimo 6 caracteres").optional());
 
+const requiredPassword = z.string().min(6, "Contraseña requerida (mínimo 6 caracteres)");
+
 export const createUserSchema = z.object({
   email: z.string().email("Email inválido"),
   nombre: z.string().min(1, "Nombre requerido"),
@@ -14,7 +16,7 @@ export const createUserSchema = z.object({
   telefono: z.string().optional(),
   role: z.enum(["ADMINISTRADOR", "GERENTE", "EMPLEADO"]).default("EMPLEADO"),
   areaId: z.string().min(1, "Área requerida"),
-  password: optionalPassword,
+  password: requiredPassword,
 });
 
 export const updateUserSchema = z.object({

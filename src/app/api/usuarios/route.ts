@@ -79,8 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
-    const password = data.password ?? "password123";
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(data.password, 10);
 
     const area = await prisma.area.findUnique({ where: { id: data.areaId } });
     if (!area) return apiError("Área no encontrada", 404);

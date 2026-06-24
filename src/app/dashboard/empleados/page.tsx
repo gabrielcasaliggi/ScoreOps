@@ -439,7 +439,7 @@ export default function EmpleadosPage() {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required={!editing}
                 minLength={6}
-                placeholder={editing ? "Dejar vacío para no cambiar" : "password123"}
+                placeholder={editing ? "Dejar vacío para no cambiar" : "Mínimo 6 caracteres"}
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}

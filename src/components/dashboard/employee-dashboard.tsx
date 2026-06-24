@@ -89,16 +89,28 @@ export function EmployeeDashboard({
   onRefresh,
 }: EmployeeDashboardProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [taskError, setTaskError] = useState("");
 
   async function updateEstado(id: string, estado: TaskStatus) {
+    setTaskError("");
     setLoadingId(id);
-    await fetch(`/api/tareas/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado }),
-    });
-    setLoadingId(null);
-    onRefresh();
+    try {
+      const res = await fetch(`/api/tareas/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setTaskError(data.error ?? "No se pudo actualizar la tarea.");
+        return;
+      }
+      onRefresh();
+    } catch {
+      setTaskError("Error de conexión al actualizar la tarea.");
+    } finally {
+      setLoadingId(null);
+    }
   }
 
   const puntajePremio = productivityBonus?.puntajePremio ?? 0;
@@ -188,6 +200,9 @@ export function EmployeeDashboard({
           Iniciá una tarea para registrar el tiempo. Los KPIs y la eficiencia son indicadores
           internos de gestión; el premio semestral se calcula según Art. 49.
         </p>
+        {taskError && (
+          <p className="mb-4 text-sm text-destructive">{taskError}</p>
+        )}
         <div className="grid gap-4 md:grid-cols-3">
           {COLUMNS.map((col) => (
             <div
