@@ -31,42 +31,29 @@ async function main() {
 
   const orgId = org.id;
 
-  await prisma.$executeRawUnsafe(
-    `UPDATE "Area" SET "organizationId" = $1 WHERE "organizationId" IS NULL`,
-    orgId
-  ).catch(() => {
-    /* columna puede no existir aún si se usa db push */
-  });
-
-  const areas = await prisma.area.findMany({ where: { organizationId: orgId } });
-  if (areas.length === 0) {
-    console.log("Ejecutá npm run db:push y luego el seed.");
-    return;
-  }
-
-  const updatedUsers = await prisma.user.updateMany({
-    where: { organizationId: { not: orgId } },
+  const areaResult = await prisma.area.updateMany({
     data: { organizationId: orgId },
   });
-  console.log(`Usuarios vinculados: ${updatedUsers.count}`);
+  console.log(`Áreas vinculadas: ${areaResult.count}`);
+
+  const userResult = await prisma.user.updateMany({
+    data: { organizationId: orgId },
+  });
+  console.log(`Usuarios vinculados: ${userResult.count}`);
 
   const configs = await prisma.systemConfig.findMany();
   for (const cfg of configs) {
-    if (cfg.organizationId !== orgId) {
-      await prisma.systemConfig.update({
-        where: { id: cfg.id },
-        data: { organizationId: orgId },
-      });
-    }
+    await prisma.systemConfig.update({
+      where: { id: cfg.id },
+      data: { organizationId: orgId },
+    });
   }
 
   await prisma.metaColectivaSemestre.updateMany({
-    where: { organizationId: { not: orgId } },
     data: { organizationId: orgId },
   });
 
   await prisma.evaluacion360Ciclo.updateMany({
-    where: { organizationId: { not: orgId } },
     data: { organizationId: orgId },
   });
 

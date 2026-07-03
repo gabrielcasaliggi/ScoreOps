@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
+    "db:migrate-phase0": "npx tsx scripts/migrate-phase0-production.ts",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:migrate-tenant": "npx tsx scripts/migrate-tenant.ts",
     "db:studio": "prisma studio",
