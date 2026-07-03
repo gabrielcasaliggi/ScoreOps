@@ -2,7 +2,7 @@
 
 Sistema web on-premise para gestión de puntajes, tareas, presentismo, KPIs y premio semestral (Art. 49) de la cooperativa.
 
-**Documentación para usuarios:** ver [MANUAL_DE_USO.md](./MANUAL_DE_USO.md)
+**Documentación para usuarios:** ver [MANUAL_DE_USO.md](./MANUAL_DE_USO.md) · [Guía rápida por rol](./docs/GUIA_RAPIDA_POR_ROL.md) (demos)
 
 ## Stack
 
@@ -207,6 +207,7 @@ pm2 restart vertia-gestion
 | `npm run start` | Servidor de producción |
 | `npm run db:migrate` | Migración en desarrollo |
 | `npm run db:seed` | Seed de demo (solo dev) |
+| `npm run test` | Tests del motor de premio (Art. 49 y KPI) |
 | `npm run db:studio` | Prisma Studio (explorar BD) |
 | `bash scripts/setup-postgres.sh` | Configurar PostgreSQL local |
 
