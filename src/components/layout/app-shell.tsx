@@ -49,14 +49,6 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
   const primaryNav: NavItem[] = isManager
     ? [
         { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
-        ...(isAdmin
-          ? [
-              { href: "/dashboard/ejecutivo", label: "Ejecutivo", icon: BarChart3 },
-              ...(isSuperAdmin
-                ? [{ href: "/dashboard/superadmin", label: "Vertia", icon: Shield }]
-                : []),
-            ]
-          : []),
         { href: "/dashboard/tareas", label: "Tareas", icon: ClipboardList },
         { href: "/dashboard/objetivos", label: "Objetivos", icon: Target },
         {
@@ -78,6 +70,12 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   const moreNav: NavItem[] = isManager
     ? [
+        ...(isAdmin
+          ? [{ href: "/dashboard/ejecutivo", label: "Ejecutivo", icon: BarChart3 }]
+          : []),
+        ...(isAdmin && isSuperAdmin
+          ? [{ href: "/dashboard/superadmin", label: "Vertia", icon: Shield }]
+          : []),
         { href: "/dashboard/asistencia", label: "Asistencia", icon: CalendarClock },
         { href: "/dashboard/evaluaciones", label: "Evaluaciones", icon: Star },
         ...(isAdmin
@@ -111,72 +109,73 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
   return (
     <div className="min-h-screen app-mesh-bg">
       <header className="sticky top-0 z-50 border-b border-white/60 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-3 lg:gap-4">
-            <Link href="/dashboard" className="group flex shrink-0 items-center gap-2.5 transition-transform duration-300 hover:scale-[1.02]">
-              <BrandIsotype size="sm" className="transition-transform duration-300 group-hover:scale-105" />
-              <span className="hidden font-bold tracking-tight sm:block">
-                <span className="text-base lg:text-lg">{branding.name}</span>
-              </span>
-            </Link>
+        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-4 sm:gap-3 sm:px-6">
+          <Link
+            href="/dashboard"
+            className="group flex max-w-[10rem] shrink-0 items-center gap-2 transition-transform duration-300 hover:scale-[1.02] sm:max-w-[12rem]"
+          >
+            <BrandIsotype size="sm" className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
+            <span className="hidden truncate font-bold tracking-tight sm:block">
+              <span className="text-sm lg:text-base">{branding.name}</span>
+            </span>
+          </Link>
 
-            <nav className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
-              {primaryNav.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
-                return (
-                  <Link key={item.href} href={item.href} className={cn(navLinkClass(active), "group")}>
-                    <Icon className={cn("h-4 w-4 shrink-0 icon-hover-pop", active && "nav-icon-active")} />
-                    <span className="whitespace-nowrap">{item.label}</span>
-                  </Link>
-                );
-              })}
+          <nav className="hidden min-w-0 items-center justify-center gap-0.5 overflow-x-auto scrollbar-none md:flex lg:gap-1">
+            {primaryNav.map((item) => {
+              const Icon = item.icon;
+              const active = pathname === item.href;
+              return (
+                <Link key={item.href} href={item.href} className={cn(navLinkClass(active, true), "group")}>
+                  <Icon className={cn("h-4 w-4 shrink-0 icon-hover-pop", active && "nav-icon-active")} />
+                  <span className="hidden whitespace-nowrap lg:inline">{item.label}</span>
+                </Link>
+              );
+            })}
 
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
-                  <button
-                    type="button"
-                    className={navLinkClass(moreNavActive)}
-                    aria-label="Más secciones"
-                  >
-                    <MoreHorizontal className="h-4 w-4 shrink-0" />
-                    <span className="whitespace-nowrap">Más</span>
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                  </button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Portal>
-                  <DropdownMenu.Content
-                    className="z-50 min-w-[11rem] rounded-xl border bg-white p-1.5 shadow-lg"
-                    sideOffset={6}
-                    align="start"
-                  >
-                    {moreNav.map((item) => {
-                      const Icon = item.icon;
-                      const active = pathname === item.href;
-                      return (
-                        <DropdownMenu.Item key={item.href} asChild>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none",
-                              active
-                                ? "bg-primary/10 font-medium text-primary"
-                                : "text-foreground hover:bg-muted"
-                            )}
-                          >
-                            <Icon className="h-4 w-4" />
-                            {item.label}
-                          </Link>
-                        </DropdownMenu.Item>
-                      );
-                    })}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Portal>
-              </DropdownMenu.Root>
-            </nav>
-          </div>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  type="button"
+                  className={navLinkClass(moreNavActive, true)}
+                  aria-label="Más secciones"
+                >
+                  <MoreHorizontal className="h-4 w-4 shrink-0" />
+                  <span className="hidden whitespace-nowrap lg:inline">Más</span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  className="z-50 min-w-[11rem] rounded-xl border bg-white p-1.5 shadow-lg"
+                  sideOffset={6}
+                  align="end"
+                >
+                  {moreNav.map((item) => {
+                    const Icon = item.icon;
+                    const active = pathname === item.href;
+                    return (
+                      <DropdownMenu.Item key={item.href} asChild>
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none",
+                            active
+                              ? "bg-primary/10 font-medium text-primary"
+                              : "text-foreground hover:bg-muted"
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </Link>
+                      </DropdownMenu.Item>
+                    );
+                  })}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </nav>
 
-          <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             <NotificationBell />
             <Link href="/dashboard/configuracion">
               <Button
@@ -188,11 +187,11 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
-            <div className="hidden items-center gap-2 border-l border-border/60 pl-2 md:flex lg:gap-3 lg:pl-3">
+            <div className="hidden items-center gap-2 border-l border-border/60 pl-2 md:flex lg:pl-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-violet-500/20 text-xs font-bold text-primary ring-2 ring-white">
                 {getInitials(user.nombre, user.apellido)}
               </div>
-              <div className="hidden text-right text-sm leading-tight xl:block">
+              <div className="hidden text-right text-sm leading-tight 2xl:block">
                 <p className="font-semibold">
                   {user.nombre} {user.apellido}
                 </p>
@@ -213,7 +212,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
           </div>
         </div>
 
-        <nav className="flex gap-1 overflow-x-auto border-t border-border/50 bg-white/60 px-2 py-1.5 lg:hidden">
+        <nav className="flex gap-0.5 overflow-x-auto border-t border-border/50 bg-white/60 px-2 py-1.5 scrollbar-none md:hidden">
           {allNav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
