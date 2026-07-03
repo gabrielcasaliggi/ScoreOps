@@ -27,7 +27,7 @@ export async function GET() {
   try {
     if (user.role === "ADMINISTRADOR" || user.role === "GERENTE") {
       const empleados = await prisma.user.findMany({
-        where: { role: "EMPLEADO" },
+        where: { role: "EMPLEADO", organizationId: user.organizationId },
         include: {
           area: true,
           objetivos: { include: { kpis: true } },

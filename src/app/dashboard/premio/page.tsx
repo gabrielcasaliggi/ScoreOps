@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CoordinatorDashboard } from "@/components/dashboard/coordinator-dashboard";
+import { PremioSimulator } from "@/components/dashboard/premio-simulator";
 import { PageHeader } from "@/components/layout/page-header";
 import { Award } from "lucide-react";
 
@@ -42,6 +43,7 @@ export default function PremioPage() {
         }
         description="Art. 49 — liquidación, tramos, metas colectivas y ranking por persona"
       />
+      <PremioSimulator />
       <CoordinatorDashboard
         isAdmin={role === "ADMINISTRADOR"}
         userAreaNombre={areaNombre}

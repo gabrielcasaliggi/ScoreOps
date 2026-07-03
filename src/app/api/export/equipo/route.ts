@@ -4,6 +4,7 @@ import { buildEmployeeProductivity } from "@/lib/employee-stats";
 import { parsePeriodoParam } from "@/lib/productivity-period";
 import { buildExcelReport, buildPdfReport } from "@/lib/export";
 import { apiError, requireAuth } from "@/lib/api";
+import { orgId } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   const { error, user } = await requireAuth(["ADMINISTRADOR", "GERENTE"]);
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const empleados = await prisma.user.findMany({
       where: {
+        organizationId: orgId(user),
         role: "EMPLEADO",
         activo: true,
         ...(user.role === "GERENTE" ? { areaId: user.areaId } : {}),

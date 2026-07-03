@@ -12,14 +12,18 @@ export async function GET() {
 
     const empleadoWhere =
       user.role === "GERENTE"
-        ? { role: "EMPLEADO" as const, activo: true, areaId: user.areaId }
-        : { role: "EMPLEADO" as const, activo: true };
+        ? { role: "EMPLEADO" as const, activo: true, areaId: user.areaId, organizationId: user.organizationId }
+        : { role: "EMPLEADO" as const, activo: true, organizationId: user.organizationId };
 
     const tareaScope =
-      user.role === "GERENTE" ? { user: { areaId: user.areaId } } : {};
+      user.role === "GERENTE"
+        ? { user: { areaId: user.areaId, organizationId: user.organizationId } }
+        : { user: { organizationId: user.organizationId } };
 
     const objetivoScope =
-      user.role === "GERENTE" ? { user: { areaId: user.areaId } } : {};
+      user.role === "GERENTE"
+        ? { user: { areaId: user.areaId, organizationId: user.organizationId } }
+        : { user: { organizationId: user.organizationId } };
 
     const [tareas, objetivos, empleados, areas] = await Promise.all([
       prisma.tarea.findMany({
@@ -66,7 +70,10 @@ export async function GET() {
         orderBy: { apellido: "asc" },
       }),
       user.role === "ADMINISTRADOR"
-        ? prisma.area.findMany({ orderBy: { nombre: "asc" } })
+        ? prisma.area.findMany({
+            where: { organizationId: user.organizationId },
+            orderBy: { nombre: "asc" },
+          })
         : Promise.resolve([]),
     ]);
 

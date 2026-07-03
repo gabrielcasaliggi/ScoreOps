@@ -16,6 +16,7 @@ export default function DashboardPage() {
     periodo: Parameters<typeof EmployeeDashboard>[0]["periodo"];
     tareasPorEstado: Parameters<typeof EmployeeDashboard>[0]["tareasPorEstado"];
     objetivos: Parameters<typeof EmployeeDashboard>[0]["objetivos"];
+    comparacion: Parameters<typeof EmployeeDashboard>[0]["comparacion"];
   } | null>(null);
   const [tareas, setTareas] = useState<Parameters<typeof EmployeeDashboard>[0]["tareas"]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ export default function DashboardPage() {
       }
 
       const [statsRes, tareasRes] = await Promise.all([
-        fetch("/api/stats/personal?periodo=actual"),
+        fetch("/api/stats/personal?periodo=actual&compare=anterior"),
         fetch("/api/tareas"),
       ]);
       if (!statsRes.ok || !tareasRes.ok) {
@@ -60,6 +61,7 @@ export default function DashboardPage() {
         periodo: stats.periodo,
         tareasPorEstado: stats.tareasPorEstado,
         objetivos: stats.objetivos ?? [],
+        comparacion: stats.comparacion ?? null,
       });
       setTareas(Array.isArray(tareasData) ? tareasData : []);
     } catch {

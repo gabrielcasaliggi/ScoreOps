@@ -16,6 +16,7 @@ export async function GET() {
   if (error || !user) return error;
 
   const ciclos = await prisma.evaluacion360Ciclo.findMany({
+    where: { organizationId: user.organizationId },
     orderBy: { fechaInicio: "desc" },
     include: { _count: { select: { respuestas: true } } },
   });
@@ -43,12 +44,13 @@ export async function POST(request: NextRequest) {
     }
 
     await prisma.evaluacion360Ciclo.updateMany({
-      where: { activo: true },
+      where: { organizationId: user.organizationId, activo: true },
       data: { activo: false },
     });
 
     const ciclo = await prisma.evaluacion360Ciclo.create({
       data: {
+        organizationId: user.organizationId,
         titulo: parsed.data.titulo,
         periodoId,
         fechaInicio,

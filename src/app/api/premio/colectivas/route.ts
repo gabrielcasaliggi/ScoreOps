@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const period = parsePeriodoParam(searchParams.get("periodo"));
-  const metas = await ensureMetasColectivas(period.id);
+  const metas = await ensureMetasColectivas(user.organizationId, period.id);
 
   return apiSuccess({
     metas,
@@ -39,11 +39,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     const period = parsePeriodoParam(parsed.data.periodoId ?? null);
-    await ensureMetasColectivas(period.id);
+    await ensureMetasColectivas(user.organizationId, period.id);
 
     const updated = await prisma.metaColectivaSemestre.update({
       where: {
-        periodoId_tipo: {
+        organizationId_periodoId_tipo: {
+          organizationId: user.organizationId,
           periodoId: period.id,
           tipo: parsed.data.tipo,
         },

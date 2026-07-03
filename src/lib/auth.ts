@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "crypto";
 import type { Role, User } from "@prisma/client";
 import { prisma } from "./prisma";
+import { resolveBranding, type OrganizationBranding } from "./organization-brand";
 
 const SESSION_COOKIE = "vertia_session";
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 horas
@@ -14,6 +15,7 @@ export interface SessionUser {
   role: Role;
   areaId: string;
   areaNombre: string;
+  organizationId: string;
 }
 
 function getSessionSecret(): string {
@@ -72,7 +74,18 @@ export function toSessionUser(
     role: user.role,
     areaId: user.areaId,
     areaNombre: user.area.nombre,
+    organizationId: user.organizationId,
   };
+}
+
+export async function getOrganizationBranding(
+  organizationId: string
+): Promise<OrganizationBranding | null> {
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+  });
+  if (!org) return null;
+  return resolveBranding(org);
 }
 
 function isSessionCookieSecure(): boolean {

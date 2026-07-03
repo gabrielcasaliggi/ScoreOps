@@ -41,6 +41,13 @@ export default function ConfiguracionPage() {
   const [resetPassword, setResetPassword] = useState("");
   const [premioConfig, setPremioConfig] = useState<PremioConfig | null>(null);
   const [premioLoading, setPremioLoading] = useState(false);
+  const [orgBranding, setOrgBranding] = useState({
+    name: "",
+    tagline: "",
+    logoUrl: "",
+    primaryColor: "#2563eb",
+  });
+  const [orgLoading, setOrgLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -56,6 +63,18 @@ export default function ConfiguracionPage() {
           fetch("/api/admin/config")
             .then((r) => r.json())
             .then((cfg) => setPremioConfig(cfg.art49));
+          fetch("/api/organization")
+            .then((r) => r.json())
+            .then((org) => {
+              if (org.name) {
+                setOrgBranding({
+                  name: org.name ?? "",
+                  tagline: org.tagline ?? "",
+                  logoUrl: org.logoUrl ?? "",
+                  primaryColor: org.primaryColor ?? "#2563eb",
+                });
+              }
+            });
         }
       });
   }, []);
@@ -139,6 +158,38 @@ export default function ConfiguracionPage() {
     setMessage("Configuración Art. 49 actualizada");
   }
 
+  async function handleOrgBranding(e: React.FormEvent) {
+    e.preventDefault();
+    setOrgLoading(true);
+    setError("");
+    setMessage("");
+
+    const res = await fetch("/api/organization", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: orgBranding.name,
+        tagline: orgBranding.tagline || null,
+        logoUrl: orgBranding.logoUrl || null,
+        primaryColor: orgBranding.primaryColor || null,
+      }),
+    });
+    const data = await res.json();
+    setOrgLoading(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Error al guardar branding");
+      return;
+    }
+    setOrgBranding({
+      name: data.name ?? "",
+      tagline: data.tagline ?? "",
+      logoUrl: data.logoUrl ?? "",
+      primaryColor: data.primaryColor ?? "#2563eb",
+    });
+    setMessage("Branding de la organización actualizado. Recargá la página para ver los cambios.");
+  }
+
   const isManager = role === "ADMINISTRADOR" || role === "GERENTE";
   const isAdmin = role === "ADMINISTRADOR";
 
@@ -192,6 +243,69 @@ export default function ConfiguracionPage() {
           </form>
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Branding de la organización</CardTitle>
+            <CardDescription>
+              Nombre, color y logo que ven todos los usuarios de tu cooperativa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleOrgBranding} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Nombre</Label>
+                <Input
+                  value={orgBranding.name}
+                  onChange={(e) => setOrgBranding({ ...orgBranding, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tagline</Label>
+                <Input
+                  value={orgBranding.tagline}
+                  onChange={(e) => setOrgBranding({ ...orgBranding, tagline: e.target.value })}
+                  placeholder="Gestión de productividad cooperativa"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>URL del logo</Label>
+                <Input
+                  type="url"
+                  value={orgBranding.logoUrl}
+                  onChange={(e) => setOrgBranding({ ...orgBranding, logoUrl: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Color primario</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    className="h-10 w-14 cursor-pointer p-1"
+                    value={orgBranding.primaryColor}
+                    onChange={(e) =>
+                      setOrgBranding({ ...orgBranding, primaryColor: e.target.value })
+                    }
+                  />
+                  <Input
+                    value={orgBranding.primaryColor}
+                    onChange={(e) =>
+                      setOrgBranding({ ...orgBranding, primaryColor: e.target.value })
+                    }
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                  />
+                </div>
+              </div>
+              <Button type="submit" disabled={orgLoading}>
+                {orgLoading ? "Guardando..." : "Guardar branding"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {isAdmin && premioConfig && (
         <Card>

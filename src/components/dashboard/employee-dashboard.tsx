@@ -49,6 +49,14 @@ interface EmployeeDashboardProps {
   tareasPorEstado: { pendiente: number; enProceso: number; completada: number };
   tareas: EmployeeTarea[];
   objetivos?: ObjetivoResumen[];
+  comparacion?: {
+    periodo: { label: string };
+    kpiPromedio: number;
+    puntajePremio: number;
+    eficiencia: number;
+    deltaKpi: number;
+    deltaPremio: number;
+  } | null;
   onRefresh: () => void;
 }
 
@@ -61,6 +69,7 @@ export function EmployeeDashboard({
   tareasPorEstado,
   tareas,
   objetivos = [],
+  comparacion,
   onRefresh,
 }: EmployeeDashboardProps) {
   const puntajePremio = productivityBonus?.puntajePremio ?? 0;
@@ -102,6 +111,35 @@ export function EmployeeDashboard({
           variant="violet"
         />
       </div>
+
+      {comparacion && (
+        <div className="rounded-2xl border border-border/60 bg-white/50 p-4">
+          <h2 className="text-lg font-bold">Comparación con semestre anterior</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {comparacion.periodo.label} vs período actual
+          </p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <StatCard
+              label="KPI promedio"
+              value={formatPercent(comparacion.kpiPromedio)}
+              hint={`${comparacion.deltaKpi >= 0 ? "+" : ""}${comparacion.deltaKpi} pp vs anterior`}
+              variant={comparacion.deltaKpi >= 0 ? "emerald" : "slate"}
+            />
+            <StatCard
+              label="Premio semestral"
+              value={`${comparacion.puntajePremio}%`}
+              hint={`${comparacion.deltaPremio >= 0 ? "+" : ""}${comparacion.deltaPremio} pp vs anterior`}
+              variant={comparacion.deltaPremio >= 0 ? "violet" : "slate"}
+            />
+            <StatCard
+              label="Eficiencia"
+              value={formatPercent(comparacion.eficiencia)}
+              hint="Período anterior"
+              variant="blue"
+            />
+          </div>
+        </div>
+      )}
 
       <EmployeeObjetivosPanel objetivos={objetivos} />
 

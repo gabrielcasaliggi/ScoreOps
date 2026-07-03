@@ -48,11 +48,12 @@ export function calcularPremioConPresentismo(
 }
 
 export async function buildPremioSemestralLegacy(
+  organizationId: string,
   tareas: Parameters<typeof calculateProductivityBonus>[0],
   kpiPromedio: number,
   asistencias: Pick<AsistenciaRegistro, "tipo" | "minutosTarde">[]
 ): Promise<PremioSemestralLegacy> {
-  const config = await getPremioConfig();
+  const config = await getPremioConfig(organizationId);
   const bonus = calculateProductivityBonus(tareas, kpiPromedio);
   const presentismo = calcularPremioConPresentismo(
     bonus.puntajePremio,

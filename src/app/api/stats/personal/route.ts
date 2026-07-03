@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildEmployeeProductivity } from "@/lib/employee-stats";
 import { calculateKpiCompliance } from "@/lib/productivity";
-import { parsePeriodoParam, periodoToApiPayload } from "@/lib/productivity-period";
+import { parsePeriodoParam, periodoToApiPayload, getSemesterPeriod } from "@/lib/productivity-period";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 
 const OBJETIVO_DIAS_ALERTA = 7;
@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const period = parsePeriodoParam(searchParams.get("periodo"));
+  const incluirComparacion = searchParams.get("compare") === "anterior";
 
   try {
     const empleado = await prisma.user.findUnique({
@@ -40,6 +41,31 @@ export async function GET(request: NextRequest) {
     );
 
     const now = new Date();
+
+    let comparacion = null;
+    if (incluirComparacion) {
+      const prevPeriod = getSemesterPeriod(-1);
+      const prevProductivity = await buildEmployeeProductivity(empleado, prevPeriod);
+      comparacion = {
+        periodo: periodoToApiPayload(prevPeriod),
+        kpiPromedio: prevProductivity.kpiPromedio,
+        puntajePremio: prevProductivity.productivityBonus.puntajePremio,
+        eficiencia: prevProductivity.temporalEfficiency.eficiencia,
+        deltaKpi: Math.round((productivity.kpiPromedio - prevProductivity.kpiPromedio) * 10) / 10,
+        deltaPremio:
+          Math.round(
+            (productivity.productivityBonus.puntajePremio -
+              prevProductivity.productivityBonus.puntajePremio) *
+              10
+          ) / 10,
+      };
+    }
+
+    const kpiHistorial = await prisma.kpiSnapshot.findMany({
+      where: { userId: user.id, organizationId: user.organizationId },
+      orderBy: { capturedAt: "desc" },
+      take: 30,
+    });
 
     return apiSuccess({
       user: {
@@ -75,6 +101,8 @@ export async function GET(request: NextRequest) {
           proximoVencer: diasRestantes > 0 && diasRestantes <= OBJETIVO_DIAS_ALERTA,
         };
       }),
+      comparacion,
+      kpiHistorial,
     });
   } catch (err) {
     console.error("[Stats] Error personal:", err);

@@ -200,7 +200,13 @@ export function calcularResultadoEvaluado(
 }
 
 export async function getResultadosCiclo(cicloId: string): Promise<ResultadoEvaluado[]> {
-  const pesos = await getEvaluacion360Pesos();
+  const ciclo = await prisma.evaluacion360Ciclo.findUnique({
+    where: { id: cicloId },
+    select: { organizationId: true },
+  });
+  if (!ciclo) return [];
+
+  const pesos = await getEvaluacion360Pesos(ciclo.organizationId);
 
   const respuestas = await prisma.evaluacion360Respuesta.findMany({
     where: { cicloId },

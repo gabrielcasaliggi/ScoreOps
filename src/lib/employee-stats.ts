@@ -58,8 +58,8 @@ export async function buildEmployeeProductivity(
   const effectivePeriod = period ?? getSemesterPeriod();
   const periodoId = effectivePeriod.id;
   const [config, metasColectivas] = await Promise.all([
-    getArt49Config(),
-    getMetasColectivas(periodoId),
+    getArt49Config(empleado.organizationId),
+    getMetasColectivas(empleado.organizationId, periodoId),
   ]);
 
   const art49 = calcularPremioArt49({

@@ -20,12 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { BrandIsotype } from "@/components/brand/brand-isotype";
-import { BRAND } from "@/lib/brand";
+import type { OrganizationBranding } from "@/lib/organization-brand";
 import type { SessionUser } from "@/lib/auth";
 import { cn, getInitials } from "@/lib/utils";
 
 interface AppShellProps {
   user: SessionUser;
+  branding: OrganizationBranding;
   children: React.ReactNode;
 }
 
@@ -35,7 +36,7 @@ interface NavItem {
   icon: typeof LayoutDashboard;
 }
 
-export function AppShell({ user, children }: AppShellProps) {
+export function AppShell({ user, branding, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -59,6 +60,11 @@ export function AppShell({ user, children }: AppShellProps) {
         { href: "/dashboard/tareas", label: "Mis tareas", icon: ClipboardList },
       ];
 
+  const moreNavEmployee: NavItem[] = [
+    { href: "/dashboard/mi-asistencia", label: "Mi asistencia", icon: CalendarClock },
+    { href: "/dashboard/evaluaciones", label: "Evaluaciones", icon: Star },
+  ];
+
   const moreNav: NavItem[] = isManager
     ? [
         { href: "/dashboard/asistencia", label: "Asistencia", icon: CalendarClock },
@@ -70,7 +76,7 @@ export function AppShell({ user, children }: AppShellProps) {
             ]
           : []),
       ]
-    : [{ href: "/dashboard/evaluaciones", label: "Evaluaciones", icon: Star }];
+    : moreNavEmployee;
 
   const allNav = [...primaryNav, ...moreNav];
   const moreNavActive = moreNav.some((item) => pathname === item.href);
@@ -99,7 +105,7 @@ export function AppShell({ user, children }: AppShellProps) {
             <Link href="/dashboard" className="group flex shrink-0 items-center gap-2.5 transition-transform duration-300 hover:scale-[1.02]">
               <BrandIsotype size="sm" className="transition-transform duration-300 group-hover:scale-105" />
               <span className="hidden font-bold tracking-tight sm:block">
-                <span className="text-base lg:text-lg">{BRAND.name}</span>
+                <span className="text-base lg:text-lg">{branding.name}</span>
               </span>
             </Link>
 

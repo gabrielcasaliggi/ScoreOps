@@ -69,23 +69,48 @@ enum ImportBatchTipo {
   ASISTENCIA
 }
 
+model Organization {
+  id                  String                  @id @default(cuid())
+  slug                String                  @unique
+  name                String
+  tagline             String?
+  logoUrl             String?
+  primaryColor        String?
+  activo              Boolean                 @default(true)
+  areas               Area[]
+  users               User[]
+  configs             SystemConfig[]
+  metasColectivas     MetaColectivaSemestre[]
+  ciclosEvaluacion    Evaluacion360Ciclo[]
+  kpiSnapshots        KpiSnapshot[]
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+}
+
 model Area {
-  id        String   @id @default(cuid())
-  nombre    String   @unique
-  usuarios  User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nombre         String
+  usuarios       User[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, nombre])
+  @@index([organizationId])
 }
 
 model User {
   id                  String                   @id @default(cuid())
-  email               String                   @unique
+  organizationId      String
+  organization        Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email               String
   password            String
   nombre              String
   apellido            String
   role                Role                     @default(EMPLEADO)
-  legajo              String?                  @unique
-  externalId          String?                  @unique
+  legajo              String?
+  externalId          String?
   telefono            String?
   activo              Boolean                  @default(true)
   fechaAlta           DateTime                 @default(now())
@@ -103,23 +128,30 @@ model User {
   evaluacionesEnviadas  Evaluacion360Respuesta[] @relation("Evaluador")
   scoreAudits         ScoreAuditLog[]
   importBatches       ImportBatch[]
+  kpiSnapshots        KpiSnapshot[]
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
 
+  @@unique([organizationId, email])
+  @@unique([organizationId, legajo])
+  @@unique([organizationId, externalId])
   @@index([activo, areaId])
+  @@index([organizationId])
 }
 
 model MetaColectivaSemestre {
-  id          String            @id @default(cuid())
-  periodoId   String
-  tipo        MetaColectivaTipo
-  valorMeta   Float
-  valorActual Float             @default(0)
-  observacion String?
-  updatedAt   DateTime          @updatedAt
-  createdAt   DateTime          @default(now())
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  periodoId      String
+  tipo           MetaColectivaTipo
+  valorMeta      Float
+  valorActual    Float             @default(0)
+  observacion    String?
+  updatedAt      DateTime          @updatedAt
+  createdAt      DateTime          @default(now())
 
-  @@unique([periodoId, tipo])
+  @@unique([organizationId, periodoId, tipo])
 }
 
 model Objetivo {
@@ -137,15 +169,35 @@ model Objetivo {
 }
 
 model KPI {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   nombre      String
   valorMeta   Float
-  valorActual Float    @default(0)
+  valorActual Float         @default(0)
   unidad      String
   objetivoId  String
-  objetivo    Objetivo @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  objetivo    Objetivo      @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  snapshots   KpiSnapshot[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model KpiSnapshot {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  kpiId          String
+  kpi            KPI          @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodoId      String
+  valorActual    Float
+  valorMeta      Float
+  cumplimiento   Float
+  capturedAt     DateTime     @default(now())
+
+  @@index([kpiId, periodoId])
+  @@index([userId, periodoId])
+  @@index([organizationId, periodoId])
 }
 
 model Tarea {
@@ -204,11 +256,16 @@ model LoginAttempt {
 }
 
 model SystemConfig {
-  clave       String   @id
-  valor       Json
-  descripcion String?
-  updatedAt   DateTime @updatedAt
-  updatedById String?
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clave          String
+  valor          Json
+  descripcion    String?
+  updatedAt      DateTime     @updatedAt
+  updatedById    String?
+
+  @@unique([organizationId, clave])
 }
 
 model ImportBatch {
@@ -261,15 +318,19 @@ model ScoreAuditLog {
 }
 
 model Evaluacion360Ciclo {
-  id          String                   @id @default(cuid())
-  titulo      String
-  periodoId   String
-  fechaInicio DateTime
-  fechaFin    DateTime
-  activo      Boolean                  @default(true)
-  respuestas  Evaluacion360Respuesta[]
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
+  id             String                   @id @default(cuid())
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  titulo         String
+  periodoId      String
+  fechaInicio    DateTime
+  fechaFin       DateTime
+  activo         Boolean                  @default(true)
+  respuestas     Evaluacion360Respuesta[]
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([organizationId, activo])
 }
 
 model Evaluacion360Respuesta {

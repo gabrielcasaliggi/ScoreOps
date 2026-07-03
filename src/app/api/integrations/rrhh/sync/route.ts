@@ -3,6 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/api";
+import { areaInOrg, resolveDefaultOrganizationId, userByOrgEmail } from "@/lib/tenant";
 
 const syncSchema = z.object({
   apiKey: z.string().min(1),
@@ -50,7 +51,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const areas = await prisma.area.findMany();
+    const organizationId = await resolveDefaultOrganizationId();
+    const areas = await prisma.area.findMany({ where: areaInOrg(organizationId) });
     const areaByName = new Map(areas.map((a) => [a.nombre.toLowerCase(), a.id]));
     let sincronizados = 0;
     const errores: string[] = [];
@@ -62,15 +64,19 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const existing = await prisma.user.findUnique({ where: { email: emp.email.toLowerCase() } });
+      const email = emp.email.toLowerCase();
+      const existing = await prisma.user.findUnique({
+        where: userByOrgEmail(organizationId, email),
+      });
       const passwordHash = existing
         ? undefined
         : await bcrypt.hash(`rrhh-${emp.externalId}`, 10);
 
       await prisma.user.upsert({
-        where: { email: emp.email.toLowerCase() },
+        where: userByOrgEmail(organizationId, email),
         create: {
-          email: emp.email.toLowerCase(),
+          organizationId,
+          email,
           nombre: emp.nombre,
           apellido: emp.apellido,
           legajo: emp.legajo,

@@ -19,7 +19,11 @@ export async function GET(request: NextRequest) {
   const period: ProductivityPeriod = parsePeriodoParam(periodoParam);
 
   try {
-    const empleadoWhere: Record<string, unknown> = { role: "EMPLEADO", activo: true };
+    const empleadoWhere: Record<string, unknown> = {
+      role: "EMPLEADO",
+      activo: true,
+      organizationId: user.organizationId,
+    };
 
     if (user.role === "GERENTE") {
       empleadoWhere.areaId = user.areaId;
@@ -39,7 +43,10 @@ export async function GET(request: NextRequest) {
         orderBy: { apellido: "asc" },
       }),
       user.role === "ADMINISTRADOR"
-        ? prisma.area.findMany({ orderBy: { nombre: "asc" } })
+        ? prisma.area.findMany({
+            where: { organizationId: user.organizationId },
+            orderBy: { nombre: "asc" },
+          })
         : Promise.resolve([]),
     ]);
 

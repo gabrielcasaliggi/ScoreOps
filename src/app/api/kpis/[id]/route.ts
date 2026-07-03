@@ -3,6 +3,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 
+import { captureKpiSnapshot } from "@/lib/kpi-snapshots";
+import { getSemesterPeriod } from "@/lib/productivity-period";
+
 const updateSchema = z.object({
   nombre: z.string().min(1).optional(),
   valorMeta: z.number().positive().optional(),
@@ -22,9 +25,13 @@ export async function PATCH(
   try {
     const existing = await prisma.kPI.findUnique({
       where: { id },
-      include: { objetivo: true },
+      include: { objetivo: { include: { user: { select: { id: true, organizationId: true } } } } },
     });
     if (!existing) return apiError("KPI no encontrado", 404);
+
+    if (existing.objetivo.user.organizationId !== user.organizationId) {
+      return apiError("Sin permisos", 403);
+    }
 
     if (user.role === "EMPLEADO" && existing.objetivo.userId !== user.id) {
       return apiError("Sin permisos", 403);
@@ -47,6 +54,8 @@ export async function PATCH(
         where: { id },
         data: { valorActual: parsed.data.valorActual },
       });
+      const period = getSemesterPeriod();
+      await captureKpiSnapshot(id, user.organizationId, user.id, period.id);
       return apiSuccess(kpi);
     }
 

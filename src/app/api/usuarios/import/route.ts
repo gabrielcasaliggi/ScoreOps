@@ -4,6 +4,7 @@ import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { parseCsvContent, rowToRecord } from "@/lib/csv-utils";
+import { areaInOrg, orgId, userByOrgEmail } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   const { error, user } = await requireAuth(["ADMINISTRADOR"]);
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       return apiError(`Columnas faltantes: ${missing.join(", ")}`);
     }
 
-    const areas = await prisma.area.findMany();
+    const areas = await prisma.area.findMany({ where: areaInOrg(orgId(user)) });
     const areaByName = new Map(areas.map((a) => [a.nombre.toLowerCase(), a.id]));
 
     const errores: { fila: number; motivo: string }[] = [];
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
         const email = record.email.toLowerCase();
         const existing = await prisma.user.findUnique({
-          where: { email },
+          where: userByOrgEmail(orgId(user), email),
           select: { id: true },
         });
 
@@ -73,8 +74,9 @@ export async function POST(request: NextRequest) {
           : undefined;
 
         await prisma.user.upsert({
-          where: { email },
+          where: userByOrgEmail(orgId(user), email),
           create: {
+            organizationId: orgId(user),
             email,
             nombre: record.nombre,
             apellido: record.apellido,

@@ -16,12 +16,13 @@ function defaultMetaForTipo(
 }
 
 export async function ensureMetasColectivas(
+  organizationId: string,
   periodoId: string,
   config?: Art49Config
 ): Promise<MetaColectivaSemestre[]> {
-  const cfg = config ?? (await getArt49Config());
+  const cfg = config ?? (await getArt49Config(organizationId));
   const existing = await prisma.metaColectivaSemestre.findMany({
-    where: { periodoId },
+    where: { organizationId, periodoId },
   });
 
   const byTipo = new Map(existing.map((m) => [m.tipo, m]));
@@ -30,6 +31,7 @@ export async function ensureMetasColectivas(
     if (!byTipo.has(tipo)) {
       const created = await prisma.metaColectivaSemestre.create({
         data: {
+          organizationId,
           periodoId,
           tipo,
           valorMeta: defaultMetaForTipo(tipo, cfg),
@@ -44,9 +46,10 @@ export async function ensureMetasColectivas(
 }
 
 export async function getMetasColectivas(
+  organizationId: string,
   periodoId: string
 ): Promise<MetaColectivaSemestre[]> {
-  return ensureMetasColectivas(periodoId);
+  return ensureMetasColectivas(organizationId, periodoId);
 }
 
 export { DEFAULT_ART49_CONFIG };

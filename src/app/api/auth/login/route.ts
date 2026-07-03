@@ -11,9 +11,12 @@ import {
   recordLoginAttempt,
 } from "@/lib/login-security";
 
+import { DEFAULT_ORG_SLUG } from "@/lib/tenant";
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  orgSlug: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -35,8 +38,20 @@ export async function POST(request: NextRequest) {
       return apiError(`${getLockoutMessage()} (${mins} min restantes)`, 429);
     }
 
+    const org = await prisma.organization.findUnique({
+      where: { slug: parsed.data.orgSlug ?? DEFAULT_ORG_SLUG },
+    });
+    if (!org || !org.activo) {
+      return apiError("Organización no encontrada", 404);
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: parsed.data.email },
+      where: {
+        organizationId_email: {
+          organizationId: org.id,
+          email: parsed.data.email.toLowerCase(),
+        },
+      },
       include: { area: true },
     });
 

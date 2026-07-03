@@ -6,6 +6,7 @@ export async function GET() {
   if (error || !user) return error;
 
   const areas = await prisma.area.findMany({
+    where: { organizationId: user.organizationId },
     orderBy: { nombre: "asc" },
     select: { id: true, nombre: true },
   });

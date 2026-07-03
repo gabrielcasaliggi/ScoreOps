@@ -4,35 +4,42 @@ import { seedSystemConfig } from "../src/lib/system-config";
 
 const prisma = new PrismaClient();
 
+const ORG_SLUG = "demo";
+const ORG_NAME = "Cooperativa Demo";
+
 async function main() {
   console.log("Iniciando seed de datos...");
 
-  await seedSystemConfig();
+  const org = await prisma.organization.upsert({
+    where: { slug: ORG_SLUG },
+    update: { name: ORG_NAME },
+    create: {
+      slug: ORG_SLUG,
+      name: ORG_NAME,
+      tagline: "Puntajes, tareas y premio a la productividad",
+      primaryColor: "#5b4ae0",
+    },
+  });
 
-  const areas = await Promise.all([
-    prisma.area.upsert({
-      where: { nombre: "Administración" },
-      update: {},
-      create: { nombre: "Administración" },
-    }),
-    prisma.area.upsert({
-      where: { nombre: "Operaciones" },
-      update: {},
-      create: { nombre: "Operaciones" },
-    }),
-    prisma.area.upsert({
-      where: { nombre: "Atención al Cliente" },
-      update: {},
-      create: { nombre: "Atención al Cliente" },
-    }),
-  ]);
+  await seedSystemConfig(org.id);
+
+  const areas = await Promise.all(
+    ["Administración", "Operaciones", "Atención al Cliente"].map((nombre) =>
+      prisma.area.upsert({
+        where: { organizationId_nombre: { organizationId: org.id, nombre } },
+        update: {},
+        create: { organizationId: org.id, nombre },
+      })
+    )
+  );
 
   const passwordHash = await bcrypt.hash("password123", 10);
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@vertia.local" },
+    where: { organizationId_email: { organizationId: org.id, email: "admin@vertia.local" } },
     update: { legajo: "0001" },
     create: {
+      organizationId: org.id,
       email: "admin@vertia.local",
       password: passwordHash,
       nombre: "Ana",
@@ -44,9 +51,10 @@ async function main() {
   });
 
   const gerente = await prisma.user.upsert({
-    where: { email: "gerente@vertia.local" },
+    where: { organizationId_email: { organizationId: org.id, email: "gerente@vertia.local" } },
     update: { legajo: "0002" },
     create: {
+      organizationId: org.id,
       email: "gerente@vertia.local",
       password: passwordHash,
       nombre: "Carlos",
@@ -58,9 +66,10 @@ async function main() {
   });
 
   const empleado1 = await prisma.user.upsert({
-    where: { email: "empleado@vertia.local" },
+    where: { organizationId_email: { organizationId: org.id, email: "empleado@vertia.local" } },
     update: { legajo: "1001" },
     create: {
+      organizationId: org.id,
       email: "empleado@vertia.local",
       password: passwordHash,
       nombre: "María",
@@ -72,9 +81,10 @@ async function main() {
   });
 
   const empleado2 = await prisma.user.upsert({
-    where: { email: "pedro@vertia.local" },
+    where: { organizationId_email: { organizationId: org.id, email: "pedro@vertia.local" } },
     update: { legajo: "1002" },
     create: {
+      organizationId: org.id,
       email: "pedro@vertia.local",
       password: passwordHash,
       nombre: "Pedro",
@@ -85,88 +95,67 @@ async function main() {
     },
   });
 
-  const objetivo1 = await prisma.objetivo.create({
-    data: {
-      titulo: "Optimizar trámites administrativos Q2",
-      descripcion: "Reducir tiempos de gestión documental",
-      fechaInicio: new Date("2026-04-01"),
-      fechaFin: new Date("2026-06-30"),
-      userId: empleado1.id,
-      kpis: {
-        create: [
-          { nombre: "Trámites procesados", valorMeta: 100, valorActual: 72, unidad: "Trámites" },
-          { nombre: "Tiempo medio de respuesta", valorMeta: 24, valorActual: 18, unidad: "Horas" },
-        ],
-      },
-    },
-  });
-
-  const objetivo2 = await prisma.objetivo.create({
-    data: {
-      titulo: "Mejora de facturación mensual",
-      fechaInicio: new Date("2026-04-01"),
-      fechaFin: new Date("2026-06-30"),
-      userId: empleado2.id,
-      kpis: {
-        create: [
-          { nombre: "Facturas emitidas", valorMeta: 50, valorActual: 38, unidad: "Facturas" },
-        ],
-      },
-    },
-  });
-
-  await prisma.tarea.createMany({
-    data: [
-      {
-        titulo: "Revisar expedientes pendientes",
-        estado: "EN_PROCESO",
-        tiempoEstimado: 120,
-        prioridad: 1,
+  const existingObjetivos = await prisma.objetivo.count({ where: { userId: empleado1.id } });
+  if (existingObjetivos === 0) {
+    await prisma.objetivo.create({
+      data: {
+        titulo: "Optimizar trámites administrativos Q2",
+        descripcion: "Reducir tiempos de gestión documental",
+        fechaInicio: new Date("2026-04-01"),
+        fechaFin: new Date("2026-06-30"),
         userId: empleado1.id,
-        objetivoId: objetivo1.id,
+        kpis: {
+          create: [
+            { nombre: "Trámites procesados", valorMeta: 100, valorActual: 72, unidad: "Trámites" },
+            { nombre: "Tiempo medio de respuesta", valorMeta: 24, valorActual: 18, unidad: "Horas" },
+          ],
+        },
       },
-      {
-        titulo: "Actualizar base de datos de clientes",
-        estado: "PENDIENTE",
-        tiempoEstimado: 90,
-        prioridad: 2,
-        userId: empleado1.id,
-        objetivoId: objetivo1.id,
-      },
-      {
-        titulo: "Emitir facturas del mes",
-        estado: "COMPLETADA",
-        tiempoEstimado: 180,
-        tiempoReal: 165,
-        prioridad: 1,
+    });
+
+    await prisma.objetivo.create({
+      data: {
+        titulo: "Mejora de facturación mensual",
+        fechaInicio: new Date("2026-04-01"),
+        fechaFin: new Date("2026-06-30"),
         userId: empleado2.id,
-        objetivoId: objetivo2.id,
-        completedAt: new Date(),
+        kpis: {
+          create: [{ nombre: "Facturas emitidas", valorMeta: 50, valorActual: 38, unidad: "Facturas" }],
+        },
       },
-      {
-        titulo: "Conciliación bancaria",
-        estado: "COMPLETADA",
-        tiempoEstimado: 60,
-        tiempoReal: 75,
-        prioridad: 2,
-        userId: empleado2.id,
-        completedAt: new Date(),
-      },
-      {
-        titulo: "Informe semanal de productividad",
-        estado: "PENDIENTE",
-        tiempoEstimado: 45,
-        prioridad: 3,
-        userId: empleado1.id,
-      },
-    ],
-  });
+    });
+  }
 
-  console.log("Seed completado:");
-  console.log(`  Admin: ${admin.email}`);
-  console.log(`  Gerente: ${gerente.email}`);
-  console.log(`  Empleados: ${empleado1.email}, ${empleado2.email}`);
-  console.log("  Contraseña para todos: password123");
+  const tareaCount = await prisma.tarea.count();
+  if (tareaCount === 0) {
+    await prisma.tarea.createMany({
+      data: [
+        {
+          titulo: "Revisar expedientes pendientes",
+          estado: "PENDIENTE",
+          tiempoEstimado: 120,
+          prioridad: 1,
+          userId: empleado1.id,
+          evaluaProductividad: true,
+          pesoProductividad: 2,
+        },
+        {
+          titulo: "Actualizar base de clientes",
+          estado: "EN_PROCESO",
+          tiempoEstimado: 90,
+          prioridad: 2,
+          userId: empleado2.id,
+          startedAt: new Date(),
+          evaluaProductividad: true,
+          pesoProductividad: 2,
+        },
+      ],
+    });
+  }
+
+  console.log("Seed completado.");
+  console.log(`  Organización: ${org.name} (${org.slug})`);
+  console.log(`  Admin: admin@vertia.local / password123`);
 }
 
 main()

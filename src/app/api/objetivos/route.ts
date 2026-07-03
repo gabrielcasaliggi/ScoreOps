@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
   if (user.role === "EMPLEADO") {
     where.userId = user.id;
   } else if (user.role === "GERENTE") {
-    where.user = { areaId: user.areaId };
+    where.user = { areaId: user.areaId, organizationId: user.organizationId };
     if (userId) where.userId = userId;
-  } else if (userId) {
-    where.userId = userId;
+  } else {
+    where.user = { organizationId: user.organizationId };
+    if (userId) where.userId = userId;
   }
 
   const objetivos = await prisma.objetivo.findMany({

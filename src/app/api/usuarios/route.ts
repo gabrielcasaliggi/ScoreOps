@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   const areaId = searchParams.get("areaId");
   const q = searchParams.get("q")?.trim();
 
-  const where: Prisma.UserWhereInput = {};
+  const where: Prisma.UserWhereInput = { organizationId: user.organizationId };
 
   if (user.role === "GERENTE") {
     where.areaId = user.areaId;
@@ -82,10 +82,13 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(data.password, 10);
 
     const area = await prisma.area.findUnique({ where: { id: data.areaId } });
-    if (!area) return apiError("Área no encontrada", 404);
+    if (!area || area.organizationId !== user.organizationId) {
+      return apiError("Área no encontrada", 404);
+    }
 
     const created = await prisma.user.create({
       data: {
+        organizationId: user.organizationId,
         email: data.email.toLowerCase(),
         nombre: data.nombre,
         apellido: data.apellido,

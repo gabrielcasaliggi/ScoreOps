@@ -2,9 +2,11 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/api";
+import { DEFAULT_ORG_SLUG, userByOrgEmail } from "@/lib/tenant";
 
 const schema = z.object({
   email: z.string().email(),
+  orgSlug: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -13,8 +15,18 @@ export async function POST(request: Request) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) return apiError("Email inválido");
 
+    const org = await prisma.organization.findUnique({
+      where: { slug: parsed.data.orgSlug ?? DEFAULT_ORG_SLUG },
+    });
+    if (!org) {
+      return apiSuccess({
+        message:
+          "Si el email está registrado, se ha notificado al administrador para restablecer tu contraseña.",
+      });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: parsed.data.email },
+      where: userByOrgEmail(org.id, parsed.data.email),
     });
 
     // Respuesta genérica para no revelar si el email existe
@@ -33,7 +45,10 @@ export async function POST(request: Request) {
     });
 
     const admins = await prisma.user.findMany({
-      where: { role: { in: ["ADMINISTRADOR", "GERENTE"] } },
+      where: {
+        organizationId: org.id,
+        role: { in: ["ADMINISTRADOR", "GERENTE"] },
+      },
     });
 
     for (const admin of admins) {

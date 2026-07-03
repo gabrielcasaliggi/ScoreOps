@@ -21,7 +21,7 @@ export async function GET() {
   const { error, user } = await requireAuth(["ADMINISTRADOR"]);
   if (error || !user) return error;
 
-  const art49 = await getArt49Config();
+  const art49 = await getArt49Config(user.organizationId);
   return apiSuccess({ art49 });
 }
 
@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest) {
       return apiError(parsed.error.issues[0]?.message ?? "Datos inválidos");
     }
 
-    const config = await setArt49Config(parsed.data, user.id);
+    const config = await setArt49Config(user.organizationId, parsed.data, user.id);
     return apiSuccess({ art49: config });
   } catch (err) {
     console.error("[Admin Config]", err);
