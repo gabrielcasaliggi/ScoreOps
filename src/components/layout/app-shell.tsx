@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   Award,
+  BarChart3,
   CalendarClock,
   ChevronDown,
   ClipboardCheck,
@@ -13,6 +14,7 @@ import {
   LogOut,
   MoreHorizontal,
   Settings,
+  Shield,
   Star,
   Target,
   Users,
@@ -27,6 +29,7 @@ import { cn, getInitials } from "@/lib/utils";
 interface AppShellProps {
   user: SessionUser;
   branding: OrganizationBranding;
+  isSuperAdmin?: boolean;
   children: React.ReactNode;
 }
 
@@ -36,7 +39,7 @@ interface NavItem {
   icon: typeof LayoutDashboard;
 }
 
-export function AppShell({ user, branding, children }: AppShellProps) {
+export function AppShell({ user, branding, isSuperAdmin = false, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -46,6 +49,14 @@ export function AppShell({ user, branding, children }: AppShellProps) {
   const primaryNav: NavItem[] = isManager
     ? [
         { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
+        ...(isAdmin
+          ? [
+              { href: "/dashboard/ejecutivo", label: "Ejecutivo", icon: BarChart3 },
+              ...(isSuperAdmin
+                ? [{ href: "/dashboard/superadmin", label: "Vertia", icon: Shield }]
+                : []),
+            ]
+          : []),
         { href: "/dashboard/tareas", label: "Tareas", icon: ClipboardList },
         { href: "/dashboard/objetivos", label: "Objetivos", icon: Target },
         {

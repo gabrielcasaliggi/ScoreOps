@@ -34,6 +34,7 @@ interface EmployeeDashboardProps {
   productivityBonus?: {
     puntajePremio: number;
     art49?: PremioArt49;
+    premioTemplate?: string;
     tareasEvaluablesCompletadas: number;
     eficienciaEvaluable: number;
     gestionInternaPuntaje?: number;
@@ -188,6 +189,15 @@ export function EmployeeDashboard({
           </div>
         )}
       </div>
+
+      {productivityBonus?.premioTemplate === "kpi_simple" && !productivityBonus.art49 && (
+        <div className="rounded-2xl border border-violet-200/60 bg-violet-50/30 px-5 py-4">
+          <p className="font-semibold text-violet-900">Bono por KPI — {puntajePremio}%</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Calculado según cumplimiento KPI promedio del semestre.
+          </p>
+        </div>
+      )}
 
       {productivityBonus?.art49 && (
         <details className="rounded-2xl border border-violet-200/60 bg-violet-50/30 open:pb-2">

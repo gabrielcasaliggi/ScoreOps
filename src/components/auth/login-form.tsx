@@ -13,6 +13,7 @@ export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
@@ -27,7 +28,11 @@ export function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          ...(orgSlug.trim() ? { orgSlug: orgSlug.trim() } : {}),
+        }),
       });
 
       const data = await res.json();
@@ -121,6 +126,16 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="orgSlug">Cooperativa (opcional)</Label>
+            <Input
+              id="orgSlug"
+              placeholder="demo — dejar vacío si es la predeterminada"
+              value={orgSlug}
+              onChange={(e) => setOrgSlug(e.target.value)}
+              autoComplete="organization"
             />
           </div>
           <div className="space-y-2">

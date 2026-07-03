@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const empleados = await prisma.user.findMany({
-      where: { role: "EMPLEADO", activo: true },
+      where: { role: "EMPLEADO", activo: true, organizationId: user.organizationId },
       include: {
         area: true,
         objetivos: { include: { kpis: true } },
@@ -27,16 +27,29 @@ export async function POST(request: NextRequest) {
 
     for (const empleado of empleados) {
       const productivity = await buildEmployeeProductivity(empleado, period);
+      const art49 = productivity.productivityBonus.art49;
       await persistScoreAudit({
         userId: empleado.id,
         periodoId: period.id,
         evento: "RECALCULO_MANUAL",
-        art49: productivity.productivityBonus.art49,
+        art49: art49 ?? {
+          elegible: false,
+          antiguedadMeses: 0,
+          sueldoReferencia: 0,
+          tramos: [],
+          porcentajeTotal: productivity.productivityBonus.puntajePremio,
+          montoTotal: 0,
+          impuntualidadesLeves: 0,
+          inasistenciasInjustificadas: 0,
+          tieneSancion: false,
+          bloqueaTramosCondicionales: false,
+        },
         gestionInternaPuntaje: productivity.productivityBonus.gestionInternaPuntaje,
         detalle: {
           kpiPromedio: productivity.kpiPromedio,
           eficienciaEvaluable: productivity.productivityBonus.eficienciaEvaluable,
-          montoTotal: productivity.productivityBonus.art49.montoTotal,
+          montoTotal: art49?.montoTotal ?? 0,
+          premioTemplate: productivity.productivityBonus.premioTemplate,
         },
         realizadoPorId: user.id,
       });

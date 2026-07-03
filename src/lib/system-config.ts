@@ -2,6 +2,8 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import type { Art49Config } from "./art49-types";
 import { DEFAULT_ART49_CONFIG } from "./art49-types";
+import type { KpiSimpleConfig, PremioTemplateId } from "./premio-templates";
+import { DEFAULT_KPI_SIMPLE_CONFIG } from "./premio-templates";
 
 /** @deprecated Modelo FOETRA anterior — conservado solo por compatibilidad de lectura */
 export interface PremioConfig {
@@ -33,6 +35,8 @@ export type Evaluacion360Pesos = typeof DEFAULT_EVALUACION_360_PESOS;
 const CONFIG_KEYS = {
   premio: "premio.config",
   art49: "premio.art49",
+  premioTemplate: "premio.template",
+  kpiSimple: "premio.kpi_simple",
   evaluacion360: "evaluacion360.pesos",
 } as const;
 
@@ -66,6 +70,72 @@ export async function getArt49Config(organizationId: string): Promise<Art49Confi
   });
   if (!row) return DEFAULT_ART49_CONFIG;
   return { ...DEFAULT_ART49_CONFIG, ...(row.valor as unknown as Art49Config) };
+}
+
+export async function getPremioTemplate(organizationId: string): Promise<PremioTemplateId> {
+  const row = await prisma.systemConfig.findUnique({
+    where: configWhere(organizationId, CONFIG_KEYS.premioTemplate),
+  });
+  if (!row) return "art49_cooperativo";
+  const id = (row.valor as { id?: string }).id;
+  if (id === "kpi_simple" || id === "solo_metricas" || id === "art49_cooperativo") {
+    return id;
+  }
+  return "art49_cooperativo";
+}
+
+export async function setPremioTemplate(
+  organizationId: string,
+  templateId: PremioTemplateId,
+  updatedById?: string
+): Promise<PremioTemplateId> {
+  const valor: Prisma.InputJsonValue = { id: templateId };
+
+  await prisma.systemConfig.upsert({
+    where: configWhere(organizationId, CONFIG_KEYS.premioTemplate),
+    create: {
+      organizationId,
+      clave: CONFIG_KEYS.premioTemplate,
+      valor,
+      descripcion: "Plantilla del motor de premio",
+      updatedById,
+    },
+    update: { valor, updatedById },
+  });
+
+  return templateId;
+}
+
+export async function getKpiSimpleConfig(organizationId: string): Promise<KpiSimpleConfig> {
+  const row = await prisma.systemConfig.findUnique({
+    where: configWhere(organizationId, CONFIG_KEYS.kpiSimple),
+  });
+  if (!row) return DEFAULT_KPI_SIMPLE_CONFIG;
+  return { ...DEFAULT_KPI_SIMPLE_CONFIG, ...(row.valor as unknown as KpiSimpleConfig) };
+}
+
+export async function setKpiSimpleConfig(
+  organizationId: string,
+  config: Partial<KpiSimpleConfig>,
+  updatedById?: string
+): Promise<KpiSimpleConfig> {
+  const current = await getKpiSimpleConfig(organizationId);
+  const merged = { ...current, ...config };
+  const valor: Prisma.InputJsonValue = JSON.parse(JSON.stringify(merged));
+
+  await prisma.systemConfig.upsert({
+    where: configWhere(organizationId, CONFIG_KEYS.kpiSimple),
+    create: {
+      organizationId,
+      clave: CONFIG_KEYS.kpiSimple,
+      valor,
+      descripcion: "Parámetros bono por KPI (plantilla kpi_simple)",
+      updatedById,
+    },
+    update: { valor, updatedById },
+  });
+
+  return merged;
 }
 
 export async function setArt49Config(
@@ -153,6 +223,28 @@ export async function seedSystemConfig(organizationId: string): Promise<void> {
       clave: CONFIG_KEYS.evaluacion360,
       valor: JSON.parse(JSON.stringify(DEFAULT_EVALUACION_360_PESOS)) as Prisma.InputJsonValue,
       descripcion: "Ponderación de evaluaciones 360°",
+    },
+  });
+
+  await prisma.systemConfig.upsert({
+    where: configWhere(organizationId, CONFIG_KEYS.premioTemplate),
+    update: {},
+    create: {
+      organizationId,
+      clave: CONFIG_KEYS.premioTemplate,
+      valor: { id: "art49_cooperativo" } as Prisma.InputJsonValue,
+      descripcion: "Plantilla del motor de premio",
+    },
+  });
+
+  await prisma.systemConfig.upsert({
+    where: configWhere(organizationId, CONFIG_KEYS.kpiSimple),
+    update: {},
+    create: {
+      organizationId,
+      clave: CONFIG_KEYS.kpiSimple,
+      valor: JSON.parse(JSON.stringify(DEFAULT_KPI_SIMPLE_CONFIG)) as Prisma.InputJsonValue,
+      descripcion: "Parámetros bono por KPI (plantilla kpi_simple)",
     },
   });
 }

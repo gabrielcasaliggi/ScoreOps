@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MetasColectivasPanel } from "@/components/dashboard/metas-colectivas-panel";
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 
 interface Usuario {
   id: string;
@@ -28,6 +29,17 @@ interface PremioConfig {
   metaCobranzas: number;
 }
 
+interface PlantillaPremio {
+  id: string;
+  nombre: string;
+  descripcion: string;
+}
+
+interface KpiSimpleConfig {
+  umbralMinimo: number;
+  porcentajeMaximo: number;
+}
+
 export default function ConfiguracionPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -41,6 +53,10 @@ export default function ConfiguracionPage() {
   const [resetPassword, setResetPassword] = useState("");
   const [premioConfig, setPremioConfig] = useState<PremioConfig | null>(null);
   const [premioLoading, setPremioLoading] = useState(false);
+  const [premioTemplate, setPremioTemplate] = useState("art49_cooperativo");
+  const [plantillas, setPlantillas] = useState<PlantillaPremio[]>([]);
+  const [kpiSimpleConfig, setKpiSimpleConfig] = useState<KpiSimpleConfig | null>(null);
+  const [templateLoading, setTemplateLoading] = useState(false);
   const [orgBranding, setOrgBranding] = useState({
     name: "",
     tagline: "",
@@ -62,7 +78,12 @@ export default function ConfiguracionPage() {
         if (data.user?.role === "ADMINISTRADOR") {
           fetch("/api/admin/config")
             .then((r) => r.json())
-            .then((cfg) => setPremioConfig(cfg.art49));
+            .then((cfg) => {
+              setPremioConfig(cfg.art49);
+              setPremioTemplate(cfg.premioTemplate ?? "art49_cooperativo");
+              setKpiSimpleConfig(cfg.kpiSimple ?? null);
+              setPlantillas(cfg.plantillas ?? []);
+            });
           fetch("/api/organization")
             .then((r) => r.json())
             .then((org) => {
@@ -158,6 +179,32 @@ export default function ConfiguracionPage() {
     setMessage("Configuración Art. 49 actualizada");
   }
 
+  async function handlePremioTemplate(e: React.FormEvent) {
+    e.preventDefault();
+    setTemplateLoading(true);
+    setError("");
+    setMessage("");
+
+    const res = await fetch("/api/admin/config", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        premioTemplate,
+        ...(premioTemplate === "kpi_simple" && kpiSimpleConfig ? { kpiSimple: kpiSimpleConfig } : {}),
+      }),
+    });
+    const data = await res.json();
+    setTemplateLoading(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Error al guardar plantilla");
+      return;
+    }
+    setPremioTemplate(data.premioTemplate);
+    setKpiSimpleConfig(data.kpiSimple);
+    setMessage("Plantilla de premio actualizada");
+  }
+
   async function handleOrgBranding(e: React.FormEvent) {
     e.preventDefault();
     setOrgLoading(true);
@@ -196,6 +243,8 @@ export default function ConfiguracionPage() {
   return (
     <div className="max-w-lg space-y-6">
       <h1 className="text-2xl font-bold">Configuración</h1>
+
+      {isAdmin && <OnboardingChecklist />}
 
       <Card>
         <CardHeader>
@@ -307,7 +356,78 @@ export default function ConfiguracionPage() {
         </Card>
       )}
 
-      {isAdmin && premioConfig && (
+      {isAdmin && plantillas.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Motor de premio</CardTitle>
+            <CardDescription>
+              Elegí la plantilla de cálculo según el reglamento de tu cooperativa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePremioTemplate} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Plantilla</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={premioTemplate}
+                  onChange={(e) => setPremioTemplate(e.target.value)}
+                >
+                  {plantillas.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  {plantillas.find((p) => p.id === premioTemplate)?.descripcion}
+                </p>
+              </div>
+
+              {premioTemplate === "kpi_simple" && kpiSimpleConfig && (
+                <div className="grid grid-cols-2 gap-3 rounded-lg border p-3">
+                  <div className="space-y-2">
+                    <Label>KPI mínimo (%)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={kpiSimpleConfig.umbralMinimo}
+                      onChange={(e) =>
+                        setKpiSimpleConfig({
+                          ...kpiSimpleConfig,
+                          umbralMinimo: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Premio máximo (% sueldo)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={kpiSimpleConfig.porcentajeMaximo}
+                      onChange={(e) =>
+                        setKpiSimpleConfig({
+                          ...kpiSimpleConfig,
+                          porcentajeMaximo: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Button type="submit" disabled={templateLoading}>
+                {templateLoading ? "Guardando..." : "Guardar plantilla"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAdmin && premioConfig && premioTemplate === "art49_cooperativo" && (
         <Card>
           <CardHeader>
             <CardTitle>Premio semestral — Art. 49</CardTitle>

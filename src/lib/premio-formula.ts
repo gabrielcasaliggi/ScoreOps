@@ -1,4 +1,5 @@
 import type { PremioArt49 } from "./art49-types";
+import type { ProductivityBonus } from "./productivity";
 
 export function formatPremioArt49Resumen(art49: PremioArt49): string {
   const activos = art49.tramos.filter((t) => t.activo);
@@ -6,6 +7,17 @@ export function formatPremioArt49Resumen(art49: PremioArt49): string {
   if (activos.length === 0) return "0% del sueldo de referencia";
   const partes = activos.map((t) => `${t.porcentajeSueldo}% (${t.id})`);
   return `${partes.join(" + ")} = ${art49.porcentajeTotal}%`;
+}
+
+export function formatPremioResumen(bonus: Pick<ProductivityBonus, "puntajePremio" | "art49" | "premioTemplate">): string {
+  if (bonus.art49) return formatPremioArt49Resumen(bonus.art49);
+  if (bonus.premioTemplate === "kpi_simple") {
+    return `Bono por KPI: ${bonus.puntajePremio}% del sueldo`;
+  }
+  if (bonus.premioTemplate === "solo_metricas") {
+    return "Sin premio monetario (solo métricas)";
+  }
+  return `${bonus.puntajePremio}% del sueldo`;
 }
 
 export function formatMontoPremio(art49: PremioArt49): string {

@@ -24,7 +24,7 @@ import {
   chartAxisStyle,
 } from "@/lib/chart-theme";
 import type { EmployeeProductivity } from "@/lib/productivity";
-import { formatPremioArt49Resumen } from "@/lib/premio-formula";
+import { formatPremioResumen } from "@/lib/premio-formula";
 import { PremioFormulaExplainer } from "@/components/dashboard/premio-formula-explainer";
 import { cn, formatPercent, getInitials } from "@/lib/utils";
 
@@ -211,7 +211,7 @@ export function TeamDashboard({
                           {e.productivityBonus.puntajePremio}
                         </p>
                         <p className="text-[11px] text-muted-foreground max-w-xs">
-                          {formatPremioArt49Resumen(e.productivityBonus.art49)}
+                          {formatPremioResumen(e.productivityBonus)}
                         </p>
                       </div>
                     </div>
@@ -366,7 +366,7 @@ export function TeamDashboard({
                       {formatPercent(e.productivityBonus.eficienciaEvaluable)}
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-muted-foreground font-mono text-xs">
-                      {e.productivityBonus.art49.tramos
+                      {e.productivityBonus.art49?.tramos
                         .filter((t) => t.activo)
                         .map((t) => t.id)
                         .join("") || "—"}
@@ -375,7 +375,7 @@ export function TeamDashboard({
                       {e.productivityBonus.puntajePremio}%
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-muted-foreground">
-                      {e.productivityBonus.art49.montoTotal > 0
+                      {e.productivityBonus.art49 && e.productivityBonus.art49.montoTotal > 0
                         ? `$${e.productivityBonus.art49.montoTotal.toLocaleString("es-AR")}`
                         : "—"}
                     </td>

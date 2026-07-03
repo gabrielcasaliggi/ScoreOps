@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import Link from "next/link";
+import { Bell, Check, CheckCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ interface Notification {
   mensaje: string;
   leida: boolean;
   createdAt: string;
+  metadata?: { actionUrl?: string } | null;
 }
 
 const TIPO_COLORS: Record<string, string> = {
@@ -118,6 +120,19 @@ export function NotificationBell() {
                         </div>
                         <p className="font-medium">{n.titulo}</p>
                         <p className="text-muted-foreground text-xs mt-0.5">{n.mensaje}</p>
+                        {n.metadata?.actionUrl && (
+                          <Link
+                            href={n.metadata.actionUrl}
+                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                            onClick={() => {
+                              markRead(n.id);
+                              setOpen(false);
+                            }}
+                          >
+                            Ir a resolver
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        )}
                       </div>
                       {!n.leida && (
                         <Button

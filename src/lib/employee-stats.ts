@@ -13,8 +13,9 @@ import {
   type ProductivityPeriod,
 } from "./productivity-period";
 import { calcularPremioArt49 } from "./premio-art49";
+import { calcularPremioKpiSimple } from "./premio-templates";
 import { getMetasColectivas } from "./metas-colectivas";
-import { getArt49Config } from "./system-config";
+import { getArt49Config, getKpiSimpleConfig, getPremioTemplate } from "./system-config";
 import { getSemesterPeriod } from "./productivity-period";
 
 export type EmpleadoConDatos = User & {
@@ -57,30 +58,53 @@ export async function buildEmployeeProductivity(
 
   const effectivePeriod = period ?? getSemesterPeriod();
   const periodoId = effectivePeriod.id;
-  const [config, metasColectivas] = await Promise.all([
+  const [template, config, kpiSimpleConfig, metasColectivas] = await Promise.all([
+    getPremioTemplate(empleado.organizationId),
     getArt49Config(empleado.organizationId),
+    getKpiSimpleConfig(empleado.organizationId),
     getMetasColectivas(empleado.organizationId, periodoId),
   ]);
 
-  const art49 = calcularPremioArt49({
-    fechaAlta: empleado.fechaAlta,
-    sueldoBasico: empleado.sueldoBasico,
-    valorAntiguedad: empleado.valorAntiguedad,
-    asistencias,
-    metasColectivas,
-    period: effectivePeriod,
-    config,
-  });
-
-  const productivityBonus: ProductivityBonus = {
-    puntajePremio: art49.porcentajeTotal,
-    art49,
+  const bonusBase = {
     gestionInternaPuntaje: gestionInterna.puntajePremio,
     tareasEvaluablesCompletadas: gestionInterna.tareasEvaluablesCompletadas,
     eficienciaEvaluable: gestionInterna.eficienciaEvaluable,
     tiempoEstimadoEvaluable: gestionInterna.tiempoEstimadoEvaluable,
     tiempoRealEvaluable: gestionInterna.tiempoRealEvaluable,
   };
+
+  let productivityBonus: ProductivityBonus;
+
+  if (template === "solo_metricas") {
+    productivityBonus = {
+      puntajePremio: 0,
+      premioTemplate: template,
+      ...bonusBase,
+    };
+  } else if (template === "kpi_simple") {
+    productivityBonus = {
+      puntajePremio: calcularPremioKpiSimple(kpiPromedio, kpiSimpleConfig),
+      premioTemplate: template,
+      ...bonusBase,
+    };
+  } else {
+    const art49 = calcularPremioArt49({
+      fechaAlta: empleado.fechaAlta,
+      sueldoBasico: empleado.sueldoBasico,
+      valorAntiguedad: empleado.valorAntiguedad,
+      asistencias,
+      metasColectivas,
+      period: effectivePeriod,
+      config,
+    });
+
+    productivityBonus = {
+      puntajePremio: art49.porcentajeTotal,
+      art49,
+      premioTemplate: template,
+      ...bonusBase,
+    };
+  }
 
   return {
     userId: empleado.id,

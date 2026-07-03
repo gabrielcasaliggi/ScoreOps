@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { OrganizationTheme } from "@/components/layout/organization-theme";
 import { getSessionUser, getOrganizationBranding } from "@/lib/auth";
+import { sessionIsVertiaSuperAdmin } from "@/lib/super-admin";
 import { resolveBranding } from "@/lib/organization-brand";
 import { BRAND } from "@/lib/brand";
 
@@ -26,7 +27,11 @@ export default async function DashboardLayout({
 
   return (
     <OrganizationTheme branding={branding}>
-      <AppShell user={user} branding={branding}>
+      <AppShell
+        user={user}
+        branding={branding}
+        isSuperAdmin={sessionIsVertiaSuperAdmin(user)}
+      >
         {children}
       </AppShell>
     </OrganizationTheme>

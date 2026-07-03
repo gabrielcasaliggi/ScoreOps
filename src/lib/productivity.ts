@@ -28,9 +28,10 @@ export interface GestionInternaBonus {
 }
 
 export interface ProductivityBonus extends GestionInternaBonus {
-  /** Porcentaje del sueldo de referencia acumulado (0–50, Art. 49) */
+  /** Porcentaje del sueldo de referencia acumulado (0–50, Art. 49 u otra plantilla) */
   puntajePremio: number;
-  art49: PremioArt49;
+  art49?: PremioArt49;
+  premioTemplate?: import("./premio-templates").PremioTemplateId;
   gestionInternaPuntaje: number;
 }
 

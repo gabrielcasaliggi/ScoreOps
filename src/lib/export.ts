@@ -35,22 +35,22 @@ export function buildExcelReport(
   const detalle = empleados.map((e) => {
     const a = e.productivityBonus.art49;
     const tramo = (id: "a" | "b" | "c" | "d" | "e") =>
-      a.tramos.find((t) => t.id === id)?.activo ? "Sí" : "No";
+      a?.tramos.find((t) => t.id === id)?.activo ? "Sí" : "No";
     return {
       Empleado: `${e.nombre} ${e.apellido}`,
       Área: e.area,
       "KPI %": e.kpiPromedio,
       "Eficiencia evaluable %": e.productivityBonus.eficienciaEvaluable,
-      "Sueldo referencia": a.sueldoReferencia,
-      "Tramo a (30%)": tramo("a"),
-      "Tramo b (5%)": tramo("b"),
-      "Tramo c (5%)": tramo("c"),
-      "Tramo d (5%)": tramo("d"),
-      "Tramo e (5%)": tramo("e"),
-      "Premio % sueldo": a.porcentajeTotal,
-      "Premio $": a.montoTotal,
-      "Impunt. leves": a.impuntualidadesLeves,
-      "Faltas injust.": a.inasistenciasInjustificadas,
+      "Sueldo referencia": a?.sueldoReferencia ?? "—",
+      "Tramo a (30%)": a ? tramo("a") : "—",
+      "Tramo b (5%)": a ? tramo("b") : "—",
+      "Tramo c (5%)": a ? tramo("c") : "—",
+      "Tramo d (5%)": a ? tramo("d") : "—",
+      "Tramo e (5%)": a ? tramo("e") : "—",
+      "Premio % sueldo": e.productivityBonus.puntajePremio,
+      "Premio $": a?.montoTotal ?? "—",
+      "Impunt. leves": a?.impuntualidadesLeves ?? "—",
+      "Faltas injust.": a?.inasistenciasInjustificadas ?? "—",
     };
   });
   const wsDetalle = XLSX.utils.json_to_sheet(detalle);
@@ -124,18 +124,18 @@ export function buildPdfReport(
     body: empleados.map((e) => {
       const a = e.productivityBonus.art49;
       const tr = (id: "a" | "b" | "c" | "d" | "e") =>
-        a.tramos.find((t) => t.id === id)?.activo ? "✓" : "—";
+        a?.tramos.find((t) => t.id === id)?.activo ? "✓" : "—";
       return [
         `${e.nombre} ${e.apellido}`,
         e.area,
         `${e.kpiPromedio}%`,
-        tr("a"),
-        tr("b"),
-        tr("c"),
-        tr("d"),
-        tr("e"),
-        `${a.porcentajeTotal}%`,
-        a.montoTotal > 0 ? `$${a.montoTotal}` : "—",
+        a ? tr("a") : "—",
+        a ? tr("b") : "—",
+        a ? tr("c") : "—",
+        a ? tr("d") : "—",
+        a ? tr("e") : "—",
+        `${e.productivityBonus.puntajePremio}%`,
+        a && a.montoTotal > 0 ? `$${a.montoTotal}` : "—",
       ];
     }),
     styles: { fontSize: 8 },

@@ -40,7 +40,11 @@ export async function generateNotificationsForUser(userId: string): Promise<numb
             tipo: "OBJETIVO_PROXIMO",
             titulo: "Objetivo próximo a vencer",
             mensaje: `"${objetivo.titulo}" vence en ${diasRestantes} día(s).`,
-            metadata: { objetivoId: objetivo.id, diasRestantes },
+            metadata: {
+              objetivoId: objetivo.id,
+              diasRestantes,
+              actionUrl: "/dashboard/objetivos",
+            },
           },
         });
         created++;
@@ -60,15 +64,19 @@ export async function generateNotificationsForUser(userId: string): Promise<numb
         });
 
         if (!exists) {
-          await prisma.notification.create({
-            data: {
-              userId,
-              tipo: "KPI_RIESGO",
-              titulo: "KPI en riesgo",
-              mensaje: `"${kpi.nombre}" está al ${Math.round(compliance.cumplimiento)}% del objetivo.`,
-              metadata: { kpiId: kpi.id, cumplimiento: compliance.cumplimiento },
+        await prisma.notification.create({
+          data: {
+            userId,
+            tipo: "KPI_RIESGO",
+            titulo: "KPI en riesgo",
+            mensaje: `"${kpi.nombre}" está al ${Math.round(compliance.cumplimiento)}% del objetivo.`,
+            metadata: {
+              kpiId: kpi.id,
+              cumplimiento: compliance.cumplimiento,
+              actionUrl: "/dashboard",
             },
-          });
+          },
+        });
           created++;
         }
       }
@@ -96,7 +104,7 @@ export async function generateNotificationsForUser(userId: string): Promise<numb
             tipo: "TAREA_VENCIDA",
             titulo: "Tarea vencida",
             mensaje: `"${tarea.titulo}" superó su fecha límite.`,
-            metadata: { tareaId: tarea.id },
+            metadata: { tareaId: tarea.id, actionUrl: "/dashboard/tareas" },
           },
         });
         created++;
