@@ -154,8 +154,49 @@ async function main() {
   }
 
   console.log("Seed completado.");
-  console.log(`  Organización: ${org.name} (${org.slug})`);
-  console.log(`  Admin: admin@vertia.local / password123`);
+  console.log(`  Organización demo: ${org.name} (${org.slug})`);
+  console.log(`  Admin demo: admin@vertia.local / password123 (login sin slug o orgSlug=demo)`);
+  console.log(`  Gerente: gerente@vertia.local / empleado@vertia.local`);
+
+  // Org interna Vertia — solo operaciones de plataforma (no usar en demos comerciales)
+  const vertiaOrg = await prisma.organization.upsert({
+    where: { slug: "vertia" },
+    update: { name: "Vertia Operaciones" },
+    create: {
+      slug: "vertia",
+      name: "Vertia Operaciones",
+      tagline: "Administración de la plataforma ScoreOps",
+      primaryColor: "#1e293b",
+    },
+  });
+
+  await seedSystemConfig(vertiaOrg.id);
+
+  const vertiaArea = await prisma.area.upsert({
+    where: { organizationId_nombre: { organizationId: vertiaOrg.id, nombre: "Plataforma" } },
+    update: {},
+    create: { organizationId: vertiaOrg.id, nombre: "Plataforma" },
+  });
+
+  await prisma.user.upsert({
+    where: {
+      organizationId_email: { organizationId: vertiaOrg.id, email: "soporte@vertia.local" },
+    },
+    update: { legajo: "V001" },
+    create: {
+      organizationId: vertiaOrg.id,
+      email: "soporte@vertia.local",
+      password: passwordHash,
+      nombre: "Soporte",
+      apellido: "Vertia",
+      role: "ADMINISTRADOR",
+      legajo: "V001",
+      areaId: vertiaArea.id,
+    },
+  });
+
+  console.log(`  Super-admin: soporte@vertia.local / password123 (login orgSlug=vertia)`);
+  console.log(`  Configurá VERTIA_SUPER_ADMIN_EMAILS=soporte@vertia.local en .env`);
 }
 
 main()

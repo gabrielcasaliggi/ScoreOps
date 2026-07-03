@@ -12,6 +12,7 @@
     "db:migrate-phase0": "npx tsx scripts/migrate-phase0-production.ts",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:migrate-tenant": "npx tsx scripts/migrate-tenant.ts",
+    "db:setup-super-admin": "npx tsx scripts/setup-super-admin.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },

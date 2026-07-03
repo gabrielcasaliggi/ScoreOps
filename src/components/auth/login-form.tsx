@@ -164,7 +164,9 @@ export function LoginForm() {
         </form>
         {process.env.NODE_ENV !== "production" && (
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Demo: admin@vertia.local / gerente@vertia.local / empleado@vertia.local
+            Demo Cooperativa Demo (orgSlug: demo):
+            <br />
+            admin@vertia.local / gerente@vertia.local / empleado@vertia.local
             <br />
             Contraseña: password123
           </p>
