@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  Download,
   RefreshCw,
   TrendingUp,
   Users,
@@ -124,10 +125,23 @@ export function ExecutiveDashboard() {
             {data.periodo.label} · Plantilla: {data.plantillaPremio.nombre}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} className="rounded-xl">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Actualizar
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={load} className="rounded-xl">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Actualizar
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="rounded-xl"
+            onClick={() => {
+              window.location.href = "/api/export/ejecutivo";
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exportar PDF
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

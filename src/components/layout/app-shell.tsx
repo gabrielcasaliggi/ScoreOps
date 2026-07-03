@@ -233,7 +233,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 animate-page-enter">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 animate-page-enter">{children}</main>
     </div>
   );
 }
