@@ -70,12 +70,11 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
     };
   }, []);
 
+  const showEmpresas = isAdmin && isSuperAdmin;
+
   const primaryNav: NavItem[] = isManager
     ? [
         { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
-        ...(isAdmin && isSuperAdmin
-          ? [{ href: "/dashboard/superadmin", label: "Empresas", icon: Shield }]
-          : []),
         { href: "/dashboard/tareas", label: "Tareas", icon: ClipboardList },
         { href: "/dashboard/objetivos", label: "Objetivos", icon: Target },
         {
@@ -127,8 +126,15 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
       ]
     : moreNavEmployee;
 
-  const allNav = [...primaryNav, ...moreNav];
+  const allNav = [
+    ...(showEmpresas
+      ? [{ href: "/dashboard/superadmin", label: "Empresas", icon: Shield }]
+      : []),
+    ...primaryNav,
+    ...moreNav,
+  ];
   const moreNavActive = moreNav.some((item) => pathname === item.href);
+  const empresasActive = pathname === "/dashboard/superadmin";
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -244,7 +250,22 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
             )}
           </nav>
 
-          <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+          <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1.5">
+            {showEmpresas && (
+              <Link
+                href="/dashboard/superadmin"
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-bold tracking-tight shadow-sm transition-all sm:px-3 sm:text-sm",
+                  empresasActive
+                    ? "bg-slate-900 text-white shadow-slate-900/25"
+                    : "bg-teal-600 text-white hover:bg-teal-700 hover:shadow-md"
+                )}
+                title="Gestionar cooperativas"
+              >
+                <Shield className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                <span>Empresas</span>
+              </Link>
+            )}
             <NotificationBell />
             <Link href="/dashboard/configuracion">
               <Button
@@ -286,24 +307,31 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
             const Icon = item.icon;
             const active = pathname === item.href;
             const badge = badgeFor(item);
+            const isEmpresas = item.href === "/dashboard/superadmin";
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "relative flex min-w-[4.5rem] shrink-0 flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-[10px] font-medium transition-colors",
-                  active ? "text-primary" : "text-muted-foreground"
+                  isEmpresas
+                    ? active
+                      ? "bg-slate-900 text-white"
+                      : "bg-teal-600 text-white"
+                    : active
+                      ? "text-primary"
+                      : "text-muted-foreground"
                 )}
               >
                 <span className="relative">
-                  <Icon className={cn("h-5 w-5", active && "text-primary")} />
+                  <Icon className={cn("h-5 w-5", !isEmpresas && active && "text-primary")} />
                   {badge && (
                     <span className="absolute -right-2 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-white">
                       {badge}
                     </span>
                   )}
                 </span>
-                <span className="max-w-full truncate px-1">{item.label}</span>
+                <span className="max-w-full truncate px-1 font-semibold">{item.label}</span>
               </Link>
             );
           })}
