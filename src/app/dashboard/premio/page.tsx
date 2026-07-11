@@ -8,6 +8,7 @@ import { Award } from "lucide-react";
 
 export default function PremioPage() {
   const [role, setRole] = useState<string | null>(null);
+  const [premioHabilitado, setPremioHabilitado] = useState(true);
   const [areaNombre, setAreaNombre] = useState<string>();
 
   useEffect(() => {
@@ -16,11 +17,20 @@ export default function PremioPage() {
       .then((data) => {
         setRole(data.user?.role ?? null);
         setAreaNombre(data.user?.areaNombre);
+        setPremioHabilitado(data.user?.premioHabilitado !== false);
       });
   }, []);
 
   if (!role) {
     return <p className="text-muted-foreground">Cargando...</p>;
+  }
+
+  if (!premioHabilitado) {
+    return (
+      <p className="text-muted-foreground">
+        El premio a la productividad no está habilitado en esta organización.
+      </p>
+    );
   }
 
   if (role === "EMPLEADO") {

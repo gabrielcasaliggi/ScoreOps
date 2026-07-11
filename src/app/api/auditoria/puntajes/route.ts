@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get("userId");
   const periodoId = searchParams.get("periodoId");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = {
+    user: { organizationId: user.organizationId },
+  };
   if (userId) where.userId = userId;
   if (periodoId) where.periodoId = periodoId;
 

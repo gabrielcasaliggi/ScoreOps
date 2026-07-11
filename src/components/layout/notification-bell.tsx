@@ -21,6 +21,7 @@ const TIPO_COLORS: Record<string, string> = {
   KPI_RIESGO: "text-red-600 bg-red-50",
   TAREA_VENCIDA: "text-amber-600 bg-amber-50",
   OBJETIVO_PROXIMO: "text-blue-600 bg-blue-50",
+  WORKFLOW_PENDIENTE: "text-violet-600 bg-violet-50",
   SISTEMA: "text-violet-600 bg-violet-50",
 };
 

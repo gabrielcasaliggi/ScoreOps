@@ -5,6 +5,7 @@ import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { buildEmployeeProductivity } from "@/lib/employee-stats";
 import { getSemesterPeriod } from "@/lib/productivity-period";
 import { calculateGeneralScore } from "@/lib/productivity";
+import { isPremioHabilitado } from "@/lib/tenant";
 
 const simularSchema = z.object({
   kpiPromedio: z.number().min(0).max(200).optional(),
@@ -15,6 +16,10 @@ const simularSchema = z.object({
 export async function POST(request: NextRequest) {
   const { error, user } = await requireAuth();
   if (error || !user) return error;
+
+  if (!(await isPremioHabilitado(user.organizationId))) {
+    return apiError("Premio no habilitado en esta organización", 403);
+  }
 
   try {
     const body = await request.json();

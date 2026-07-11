@@ -12,6 +12,7 @@ const updateSchema = z.object({
     .nullable()
     .optional(),
   activo: z.boolean().optional(),
+  premioHabilitado: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -40,6 +41,7 @@ export async function PATCH(
       slug: org.slug,
       name: org.name,
       activo: org.activo,
+      premioHabilitado: org.premioHabilitado,
     });
   } catch (err) {
     console.error("[SuperAdmin Update Org]", err);

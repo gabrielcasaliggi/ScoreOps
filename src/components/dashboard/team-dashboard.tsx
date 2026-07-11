@@ -1,19 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Award, CheckCircle2, Download, FileSpreadsheet, TrendingUp, Users, Zap } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Award,
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  TrendingUp,
+  Users,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -22,11 +31,14 @@ import {
   ChartGradientDefs,
   ChartTooltip,
   chartAxisStyle,
+  chartMargin,
 } from "@/lib/chart-theme";
 import type { EmployeeProductivity } from "@/lib/productivity";
 import { formatPremioResumen } from "@/lib/premio-formula";
 import { PremioFormulaExplainer } from "@/components/dashboard/premio-formula-explainer";
 import { cn, formatPercent, getInitials } from "@/lib/utils";
+
+const PREMIO_UMBRAL_INTERVENCION = 20;
 
 type EmpleadoPremio = EmployeeProductivity;
 
@@ -60,7 +72,11 @@ export function TeamDashboard({
     window.open(`/api/export/equipo?format=${format}`, "_blank");
   }
 
-  const chartData = empleados.map((e) => ({
+  const rankingPremio = [...empleados].sort(
+    (a, b) => b.productivityBonus.puntajePremio - a.productivityBonus.puntajePremio
+  );
+
+  const chartData = rankingPremio.map((e) => ({
     nombre: `${e.nombre} ${e.apellido.charAt(0)}.`,
     kpi: e.kpiPromedio,
     eficiencia: Math.round(e.productivityBonus.eficienciaEvaluable),
@@ -68,9 +84,44 @@ export function TeamDashboard({
     area: e.area,
   }));
 
-  const rankingPremio = [...empleados].sort(
-    (a, b) => b.productivityBonus.puntajePremio - a.productivityBonus.puntajePremio
-  );
+  const aIntervenir = empleados
+    .map((e) => {
+      const art49 = e.productivityBonus.art49;
+      const premio = e.productivityBonus.puntajePremio;
+      const premioBajo = premio < PREMIO_UMBRAL_INTERVENCION;
+
+      let motivo: string | null = null;
+      if (art49 && !art49.elegible) {
+        motivo = art49.motivoInelegible ?? "No elegible al premio";
+      } else if (art49?.bloqueaTramosCondicionales) {
+        motivo = "Bloqueo individual (asistencia / sanciones) — tramos b–e off";
+      } else if (art49) {
+        const individualesOff = art49.tramos
+          .filter((t) => (t.id === "a" || t.id === "b") && !t.activo)
+          .map((t) => t.id.toUpperCase());
+        if (individualesOff.length > 0) {
+          motivo = `Sin tramo(s) individual(es) ${individualesOff.join(", ")}`;
+        } else if (premioBajo) {
+          motivo = `Premio bajo (${premio}%)`;
+        }
+      } else if (premioBajo) {
+        motivo = `Premio bajo (${premio}%)`;
+      }
+
+      return motivo
+        ? {
+            userId: e.userId,
+            nombre: e.nombre,
+            apellido: e.apellido,
+            area: e.area,
+            premio,
+            motivo,
+          }
+        : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x != null)
+    .sort((a, b) => a.premio - b.premio)
+    .slice(0, 6);
 
   const areaData =
     porAreaProp ??
@@ -112,6 +163,51 @@ export function TeamDashboard({
         </Button>
       </div>
 
+      {aIntervenir.length > 0 && (
+        <Card className="dash-focus-strip border-0 shadow-none">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-700" />
+              <div>
+                <CardTitle className="text-base text-amber-950">Quién intervenir</CardTitle>
+                <CardDescription className="text-amber-900/70">
+                  Premio bajo o tramos individuales sin activar
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {aIntervenir.map((p) => (
+                <li
+                  key={p.userId}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200/80 bg-white px-3 py-2 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {p.nombre} {p.apellido}
+                      <span className="ml-1 text-muted-foreground">· {p.area}</span>
+                    </p>
+                    <p className="text-xs text-amber-800">{p.motivo}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="tabular-nums text-sm font-semibold text-violet-600">
+                      {p.premio}%
+                    </span>
+                    <Link href={`/dashboard/tareas?userId=${p.userId}`}>
+                      <Button variant="outline" size="sm" className="h-7 rounded-lg text-xs">
+                        Ver tareas
+                        <ArrowRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Empleados"
@@ -142,8 +238,8 @@ export function TeamDashboard({
 
       <PremioFormulaExplainer compact />
 
-      <Card className="glass-card overflow-hidden border-violet-200/60">
-        <CardHeader className="border-b border-violet-100/80 bg-gradient-to-r from-violet-50/80 to-transparent">
+      <Card className="dash-panel overflow-hidden border-0 shadow-none">
+        <CardHeader className="border-b border-violet-100/70 bg-gradient-to-r from-violet-50/70 via-white to-teal-50/30">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
               <Award className="h-5 w-5 text-violet-600" />
@@ -224,86 +320,98 @@ export function TeamDashboard({
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="glass-card">
+        <Card className="dash-panel border-0 shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Rendimiento por empleado</CardTitle>
-            <CardDescription>Comparativa KPI vs eficiencia evaluable</CardDescription>
+            <CardDescription>Comparativa KPI vs eficiencia evaluable (0–100)</CardDescription>
           </CardHeader>
-          <CardContent className="h-[22rem]">
+          <CardContent className="chart-surface h-[22rem] pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} barGap={4} barCategoryGap="20%">
+              <BarChart data={chartData} barGap={6} barCategoryGap="22%" margin={chartMargin}>
                 <ChartGradientDefs />
-                <CartesianGrid stroke={CHART.grid} strokeDasharray="4 4" vertical={false} />
+                <CartesianGrid stroke={CHART.grid} strokeDasharray="3 6" vertical={false} />
                 <XAxis dataKey="nombre" tick={chartAxisStyle} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 100]} tick={chartAxisStyle} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} />
+                <Tooltip
+                  cursor={{ fill: CHART.cursor, radius: 8 }}
+                  content={<ChartTooltip />}
+                />
                 <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
-                <Bar dataKey="kpi" name="KPI %" fill="url(#gradKpi)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="kpi" name="KPI %" fill="url(#gradKpi)" radius={[8, 8, 0, 0]} />
                 <Bar
                   dataKey="eficiencia"
                   name="Eficiencia %"
                   fill="url(#gradEfficiency)"
-                  radius={[6, 6, 0, 0]}
+                  radius={[8, 8, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="dash-panel border-0 shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Curva premio Art. 49</CardTitle>
-            <CardDescription>% del sueldo de referencia por empleado</CardDescription>
+            <CardTitle className="text-base">Premio Art. 49 por persona</CardTitle>
+            <CardDescription>
+              % del sueldo de referencia (escala 0–50), ordenado de mayor a menor
+            </CardDescription>
           </CardHeader>
-          <CardContent className="h-[22rem]">
+          <CardContent className="chart-surface h-[22rem] pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <BarChart data={chartData} barCategoryGap="18%" margin={chartMargin}>
                 <ChartGradientDefs />
-                <CartesianGrid stroke={CHART.grid} strokeDasharray="4 4" vertical={false} />
+                <CartesianGrid stroke={CHART.grid} strokeDasharray="3 6" vertical={false} />
                 <XAxis dataKey="nombre" tick={chartAxisStyle} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 50]} tick={chartAxisStyle} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Line
-                  type="monotone"
+                <Tooltip
+                  cursor={{ fill: CHART.cursor, radius: 8 }}
+                  content={<ChartTooltip />}
+                />
+                <Bar
                   dataKey="premio"
                   name="Premio % sueldo"
-                  stroke={CHART.premio}
-                  strokeWidth={3}
-                  dot={{ r: 5, fill: CHART.premio, strokeWidth: 2, stroke: "#fff" }}
-                  activeDot={{ r: 7, fill: CHART.premio }}
+                  fill="url(#gradPremio)"
+                  radius={[8, 8, 0, 0]}
+                  filter="url(#barSoftShadow)"
                 />
-              </LineChart>
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
       {areaData.length > 0 && (
-        <Card className="glass-card">
+        <Card className="dash-panel border-0 shadow-none">
           <CardHeader>
             <CardTitle className="text-base">
-              {porAreaProp ? "Puntaje premio por área" : "Cumplimiento por área"}
+              {porAreaProp ? "Puntaje premio por área" : "KPI promedio por área"}
             </CardTitle>
             {periodoLabel && <CardDescription>{periodoLabel}</CardDescription>}
           </CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="chart-surface h-72 pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={areaData.map((a) => ({
                   area: a.area,
                   valor:
-                    "puntajePromedio" in a && a.puntajePromedio != null
+                    porAreaProp && "puntajePromedio" in a && a.puntajePromedio != null
                       ? a.puntajePromedio
                       : "kpiPromedio" in a
                         ? (a as { kpiPromedio: number }).kpiPromedio
                         : 0,
                 }))}
                 layout="vertical"
-                barSize={20}
+                barSize={22}
+                margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
               >
                 <ChartGradientDefs />
-                <CartesianGrid stroke={CHART.grid} strokeDasharray="4 4" horizontal={false} />
-                <XAxis type="number" domain={[0, 50]} tick={chartAxisStyle} axisLine={false} />
+                <CartesianGrid stroke={CHART.grid} strokeDasharray="3 6" horizontal={false} />
+                <XAxis
+                  type="number"
+                  domain={[0, porAreaProp ? 50 : 100]}
+                  tick={chartAxisStyle}
+                  axisLine={false}
+                />
                 <YAxis
                   type="category"
                   dataKey="area"
@@ -312,8 +420,15 @@ export function TeamDashboard({
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="valor" name="Puntaje" radius={[0, 8, 8, 0]}>
+                <Tooltip
+                  cursor={{ fill: CHART.cursor }}
+                  content={<ChartTooltip />}
+                />
+                <Bar
+                  dataKey="valor"
+                  name={porAreaProp ? "Premio %" : "KPI %"}
+                  radius={[0, 10, 10, 0]}
+                >
                   {areaData.map((_, i) => (
                     <Cell key={i} fill="url(#gradArea)" />
                   ))}
@@ -340,7 +455,9 @@ export function TeamDashboard({
                   <th className="px-5 py-3 text-left">Área</th>
                   <th className="px-5 py-3 text-right">KPI</th>
                   <th className="px-5 py-3 text-right">Eficiencia</th>
-                  <th className="px-5 py-3 text-right">a–e</th>
+                  <th className="px-5 py-3 text-right" title="Tramos Art. 49 activos (a–e)">
+                    Tramos a–e
+                  </th>
                   <th className="px-5 py-3 text-right">Premio %</th>
                   <th className="px-5 py-3 text-right">Monto</th>
                 </tr>
@@ -366,10 +483,11 @@ export function TeamDashboard({
                       {formatPercent(e.productivityBonus.eficienciaEvaluable)}
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-muted-foreground font-mono text-xs">
-                      {e.productivityBonus.art49?.tramos
-                        .filter((t) => t.activo)
-                        .map((t) => t.id)
-                        .join("") || "—"}
+                      {e.productivityBonus.art49
+                        ? e.productivityBonus.art49.tramos
+                            .map((t) => (t.activo ? t.id.toUpperCase() : "·"))
+                            .join(" ")
+                        : "—"}
                     </td>
                     <td className="px-5 py-3.5 text-right font-bold text-violet-600 tabular-nums">
                       {e.productivityBonus.puntajePremio}%

@@ -5,6 +5,8 @@ import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 
 import { captureKpiSnapshot } from "@/lib/kpi-snapshots";
 import { getSemesterPeriod } from "@/lib/productivity-period";
+import { getWorkflowConfig } from "@/lib/workflow-config";
+import { createKpiAdjustmentWorkflow } from "@/lib/workflows";
 
 const updateSchema = z.object({
   nombre: z.string().min(1).optional(),
@@ -50,6 +52,29 @@ export async function PATCH(
       if (parsed.data.valorActual === undefined) {
         return apiError("valorActual requerido");
       }
+
+      const workflowConfig = await getWorkflowConfig(user.organizationId);
+      if (workflowConfig.kpiAjusteRequiereAprobacion) {
+        if (parsed.data.valorActual === existing.valorActual) {
+          return apiSuccess(existing);
+        }
+        const workflow = await createKpiAdjustmentWorkflow({
+          organizationId: user.organizationId,
+          kpiId: existing.id,
+          solicitanteId: user.id,
+          areaId: user.areaId,
+          kpiNombre: existing.nombre,
+          valorAnterior: existing.valorActual,
+          valorPropuesto: parsed.data.valorActual,
+        });
+        return apiSuccess({
+          ...existing,
+          workflowPendiente: true,
+          workflowId: workflow.id,
+          message: "Solicitud de ajuste enviada al gerente.",
+        });
+      }
+
       const kpi = await prisma.kPI.update({
         where: { id },
         data: { valorActual: parsed.data.valorActual },

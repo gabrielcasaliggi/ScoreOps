@@ -16,7 +16,12 @@ const createTareaSchema = z.object({
   pesoProductividad: z.number().int().min(1).max(3).optional(),
 });
 
-const estadoFilterSchema = z.enum(["PENDIENTE", "EN_PROCESO", "COMPLETADA"]);
+const estadoFilterSchema = z.enum([
+  "PENDIENTE",
+  "EN_PROCESO",
+  "PENDIENTE_APROBACION",
+  "COMPLETADA",
+]);
 
 export async function GET(request: NextRequest) {
   const { error, user } = await requireAuth();
@@ -74,6 +79,17 @@ export async function POST(request: NextRequest) {
 
     if (user.role === "EMPLEADO" && targetUserId !== user.id) {
       return apiError("Sin permisos", 403);
+    }
+
+    if (targetUserId !== user.id) {
+      const target = await prisma.user.findFirst({
+        where: { id: targetUserId, organizationId: user.organizationId, activo: true },
+        select: { id: true, areaId: true },
+      });
+      if (!target) return apiError("Empleado no encontrado", 404);
+      if (user.role === "GERENTE" && target.areaId !== user.areaId) {
+        return apiError("Sin permisos para asignar fuera de tu área", 403);
+      }
     }
 
     if (parsed.data.objetivoId) {

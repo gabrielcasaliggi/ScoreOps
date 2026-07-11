@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
+import { findObjetivoInOrg, findUserInOrg } from "@/lib/tenant";
 
 const createKpiSchema = z.object({
   nombre: z.string().min(1),
@@ -18,10 +19,16 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const objetivoId = searchParams.get("objetivoId");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = {
+    objetivo: { user: { organizationId: user.organizationId } },
+  };
   if (objetivoId) where.objetivoId = objetivoId;
   if (user.role === "EMPLEADO") {
     where.objetivo = { userId: user.id };
+  } else if (user.role === "GERENTE") {
+    where.objetivo = {
+      user: { organizationId: user.organizationId, areaId: user.areaId },
+    };
   }
 
   const kpis = await prisma.kPI.findMany({
@@ -51,6 +58,16 @@ export async function POST(request: NextRequest) {
     const parsed = createKpiSchema.safeParse(body);
     if (!parsed.success) {
       return apiError(parsed.error.issues[0]?.message ?? "Datos inválidos");
+    }
+
+    const objetivo = await findObjetivoInOrg(user.organizationId, parsed.data.objetivoId);
+    if (!objetivo) return apiError("Objetivo no encontrado", 404);
+
+    if (user.role === "GERENTE") {
+      const owner = await findUserInOrg(user.organizationId, objetivo.userId);
+      if (!owner || owner.areaId !== user.areaId) {
+        return apiError("Sin permisos", 403);
+      }
     }
 
     const kpi = await prisma.kPI.create({

@@ -16,6 +16,7 @@ enum Role {
 enum TaskStatus {
   PENDIENTE
   EN_PROCESO
+  PENDIENTE_APROBACION
   COMPLETADA
 }
 
@@ -23,7 +24,20 @@ enum NotificationType {
   KPI_RIESGO
   TAREA_VENCIDA
   OBJETIVO_PROXIMO
+  WORKFLOW_PENDIENTE
   SISTEMA
+}
+
+enum WorkflowType {
+  TAREA_COMPLETADA
+  KPI_AJUSTE
+}
+
+enum WorkflowStatus {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  CANCELADA
 }
 
 enum AsistenciaTipo {
@@ -77,14 +91,35 @@ model Organization {
   logoUrl             String?
   primaryColor        String?
   activo              Boolean                 @default(true)
+  /** Si false, no se muestra ni calcula premio a la productividad */
+  premioHabilitado    Boolean                 @default(true)
   areas               Area[]
   users               User[]
   configs             SystemConfig[]
   metasColectivas     MetaColectivaSemestre[]
   ciclosEvaluacion    Evaluacion360Ciclo[]
   kpiSnapshots        KpiSnapshot[]
+  apiKeys             OrganizationApiKey[]
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
+}
+
+model OrganizationApiKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  keyPrefix      String
+  keyHash        String
+  scopes         String[]
+  activo         Boolean      @default(true)
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  createdById    String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, activo])
+  @@index([keyPrefix])
 }
 
 model Area {
@@ -129,6 +164,8 @@ model User {
   scoreAudits         ScoreAuditLog[]
   importBatches       ImportBatch[]
   kpiSnapshots        KpiSnapshot[]
+  workflowsSolicitados WorkflowRequest[] @relation("WorkflowSolicitante")
+  workflowsResueltos   WorkflowRequest[] @relation("WorkflowResolutor")
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
 
@@ -177,6 +214,7 @@ model KPI {
   objetivoId  String
   objetivo    Objetivo      @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
   snapshots   KpiSnapshot[]
+  workflows   WorkflowRequest[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }
@@ -217,6 +255,7 @@ model Tarea {
   user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   objetivoId          String?
   objetivo            Objetivo?  @relation(fields: [objetivoId], references: [id], onDelete: SetNull)
+  workflows           WorkflowRequest[]
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 }
@@ -348,4 +387,31 @@ model Evaluacion360Respuesta {
   createdAt   DateTime           @default(now())
 
   @@unique([cicloId, evaluadoId, evaluadorId, competencia])
+}
+
+model WorkflowRequest {
+  id                   String         @id @default(cuid())
+  organizationId       String
+  tipo                 WorkflowType
+  estado               WorkflowStatus @default(PENDIENTE)
+  solicitanteId        String
+  solicitante          User           @relation("WorkflowSolicitante", fields: [solicitanteId], references: [id], onDelete: Cascade)
+  resolutorId          String?
+  resolutor            User?          @relation("WorkflowResolutor", fields: [resolutorId], references: [id], onDelete: SetNull)
+  tareaId              String?
+  tarea                Tarea?         @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  kpiId                String?
+  kpi                  KPI?           @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  valorAnterior        Float?
+  valorPropuesto       Float?
+  comentarioSolicitud  String?
+  comentarioResolucion String?
+  resolvedAt           DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@index([organizationId, estado])
+  @@index([solicitanteId, estado])
+  @@index([tareaId])
+  @@index([kpiId])
 }

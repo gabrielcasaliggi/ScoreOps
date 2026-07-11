@@ -50,22 +50,32 @@ export async function POST(request: Request) {
     const parsed = schemaByAdmin.safeParse(body);
     if (!parsed.success) return apiError("Datos inválidos");
 
+    const target = await prisma.user.findFirst({
+      where: { id: parsed.data.userId, organizationId: user.organizationId },
+      select: { id: true, areaId: true },
+    });
+    if (!target) return apiError("Usuario no encontrado", 404);
+
+    if (user.role === "GERENTE" && target.areaId !== user.areaId) {
+      return apiError("Sin permisos para este empleado", 403);
+    }
+
     const hash = await bcrypt.hash(parsed.data.newPassword, 10);
     await prisma.user.update({
-      where: { id: parsed.data.userId },
+      where: { id: target.id },
       data: { password: hash },
     });
 
     await prisma.notification.create({
       data: {
-        userId: parsed.data.userId,
+        userId: target.id,
         tipo: "SISTEMA",
         titulo: "Contraseña restablecida",
         mensaje: "Un administrador ha restablecido tu contraseña. Inicia sesión con la nueva contraseña.",
       },
     });
 
-    console.log(`[Auth] Admin ${user.email} reseteó contraseña de ${parsed.data.userId}`);
+    console.log(`[Auth] Admin ${user.email} reseteó contraseña de ${target.id}`);
     return apiSuccess({ ok: true });
   } catch (err) {
     console.error("[Auth] Error reset-password:", err);

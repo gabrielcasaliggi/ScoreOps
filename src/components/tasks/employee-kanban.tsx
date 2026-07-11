@@ -8,7 +8,7 @@ import { TaskTimer } from "@/components/tasks/task-timer";
 import { TareaFechaLimiteBadge, tareaCardLimiteClass } from "@/components/tasks/tarea-fecha-limite";
 import { formatMinutes, cn } from "@/lib/utils";
 
-type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "COMPLETADA";
+type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "PENDIENTE_APROBACION" | "COMPLETADA";
 
 export interface EmployeeTarea {
   id: string;
@@ -34,6 +34,7 @@ interface EmployeeKanbanProps {
 const COLUMNS: { key: TaskStatus; label: string; accent: string }[] = [
   { key: "PENDIENTE", label: "Pendiente", accent: "border-t-slate-400" },
   { key: "EN_PROCESO", label: "En proceso", accent: "border-t-blue-500" },
+  { key: "PENDIENTE_APROBACION", label: "En revisión", accent: "border-t-amber-500" },
   { key: "COMPLETADA", label: "Completada", accent: "border-t-emerald-500" },
 ];
 
@@ -61,6 +62,10 @@ export function EmployeeKanban({ tareas, onRefresh, soloVencidas = false }: Empl
         setTaskError(data.error ?? "No se pudo actualizar la tarea.");
         return;
       }
+      const data = await res.json().catch(() => ({}));
+      if (data.workflowPendiente) {
+        setTaskError("");
+      }
       onRefresh();
     } catch {
       setTaskError("Error de conexión al actualizar la tarea.");
@@ -79,7 +84,7 @@ export function EmployeeKanban({ tareas, onRefresh, soloVencidas = false }: Empl
   return (
     <div className="space-y-4">
       {taskError && <p className="text-sm text-destructive">{taskError}</p>}
-      <div className="grid gap-4 md:grid-cols-3 animate-stagger">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 animate-stagger">
         {COLUMNS.map((col) => {
           const columnTasks = visibles.filter((t) => t.estado === col.key);
           return (
@@ -188,10 +193,15 @@ export function EmployeeKanban({ tareas, onRefresh, soloVencidas = false }: Empl
                             {loadingId === tarea.id ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
                             ) : (
-                              "Completar"
+                              "Enviar a revisión"
                             )}
                           </Button>
                         </>
+                      )}
+                      {col.key === "PENDIENTE_APROBACION" && (
+                        <p className="text-xs text-amber-700 font-medium w-full text-center py-1">
+                          Esperando aprobación del gerente
+                        </p>
                       )}
                     </div>
                   </div>

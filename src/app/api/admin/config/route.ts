@@ -10,6 +10,7 @@ import {
   setPremioTemplate,
 } from "@/lib/system-config";
 import { PREMIO_TEMPLATES, type PremioTemplateId } from "@/lib/premio-templates";
+import { getWorkflowConfig, setWorkflowConfig } from "@/lib/workflow-config";
 
 const art49ConfigSchema = z.object({
   antiguedadMinimaMeses: z.number().int().min(1).max(24).optional(),
@@ -32,20 +33,27 @@ const kpiSimpleSchema = z.object({
 
 const templateSchema = z.enum(["art49_cooperativo", "kpi_simple", "solo_metricas"]);
 
+const workflowSchema = z.object({
+  tareaRequiereAprobacion: z.boolean().optional(),
+  kpiAjusteRequiereAprobacion: z.boolean().optional(),
+});
+
 export async function GET() {
   const { error, user } = await requireAuth(["ADMINISTRADOR"]);
   if (error || !user) return error;
 
-  const [art49, premioTemplate, kpiSimple] = await Promise.all([
+  const [art49, premioTemplate, kpiSimple, workflow] = await Promise.all([
     getArt49Config(user.organizationId),
     getPremioTemplate(user.organizationId),
     getKpiSimpleConfig(user.organizationId),
+    getWorkflowConfig(user.organizationId),
   ]);
 
   return apiSuccess({
     art49,
     premioTemplate,
     kpiSimple,
+    workflow,
     plantillas: PREMIO_TEMPLATES,
   });
 }
@@ -79,13 +87,22 @@ export async function PATCH(request: NextRequest) {
       await setArt49Config(user.organizationId, parsed.data, user.id);
     }
 
-    const [art49, premioTemplate, kpiSimple] = await Promise.all([
+    if (body.workflow !== undefined) {
+      const parsed = workflowSchema.safeParse(body.workflow);
+      if (!parsed.success) {
+        return apiError(parsed.error.issues[0]?.message ?? "Parámetros workflow inválidos");
+      }
+      await setWorkflowConfig(user.organizationId, parsed.data, user.id);
+    }
+
+    const [art49, premioTemplate, kpiSimple, workflow] = await Promise.all([
       getArt49Config(user.organizationId),
       getPremioTemplate(user.organizationId),
       getKpiSimpleConfig(user.organizationId),
+      getWorkflowConfig(user.organizationId),
     ]);
 
-    return apiSuccess({ art49, premioTemplate, kpiSimple, plantillas: PREMIO_TEMPLATES });
+    return apiSuccess({ art49, premioTemplate, kpiSimple, workflow, plantillas: PREMIO_TEMPLATES });
   } catch (err) {
     console.error("[Admin Config]", err);
     return apiError("Error al actualizar configuración", 500);

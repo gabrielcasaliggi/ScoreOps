@@ -7,12 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { SystemHealthCard } from "@/components/dashboard/system-health-card";
 
 interface OrganizationRow {
   id: string;
   slug: string;
   name: string;
   activo: boolean;
+  premioHabilitado: boolean;
   usuarios: number;
   areas: number;
   createdAt: string;
@@ -33,6 +35,7 @@ export function SuperAdminPanel() {
     adminNombre: "",
     adminApellido: "",
     areaNombre: "General",
+    premioHabilitado: true,
   });
 
   const load = useCallback(async () => {
@@ -86,6 +89,7 @@ export function SuperAdminPanel() {
       adminNombre: "",
       adminApellido: "",
       areaNombre: "General",
+      premioHabilitado: true,
     });
     load();
   }
@@ -95,6 +99,15 @@ export function SuperAdminPanel() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ activo: !org.activo }),
+    });
+    load();
+  }
+
+  async function togglePremio(org: OrganizationRow) {
+    await fetch(`/api/superadmin/organizations/${org.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ premioHabilitado: !org.premioHabilitado }),
     });
     load();
   }
@@ -110,6 +123,8 @@ export function SuperAdminPanel() {
 
   return (
     <div className="space-y-6">
+      <SystemHealthCard />
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Super-admin Vertia</h1>
@@ -204,6 +219,23 @@ export function SuperAdminPanel() {
                   required
                 />
               </div>
+              <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border p-4 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-input"
+                  checked={form.premioHabilitado}
+                  onChange={(e) =>
+                    setForm({ ...form, premioHabilitado: e.target.checked })
+                  }
+                />
+                <span>
+                  <span className="font-medium block">Premio a la productividad</span>
+                  <span className="text-muted-foreground text-xs">
+                    Si está desactivado, no aparece el menú Premio ni cálculos Art. 49 / bono
+                    KPI en ninguna pantalla de esta cooperativa.
+                  </span>
+                </span>
+              </label>
               <div className="sm:col-span-2">
                 <Button type="submit" disabled={creating}>
                   {creating ? "Creando..." : "Crear organización"}
@@ -238,10 +270,16 @@ export function SuperAdminPanel() {
                       áreas
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={org.activo ? "default" : "secondary"}>
                       {org.activo ? "Activa" : "Inactiva"}
                     </Badge>
+                    <Badge variant={org.premioHabilitado ? "outline" : "secondary"}>
+                      {org.premioHabilitado ? "Con premio" : "Sin premio"}
+                    </Badge>
+                    <Button variant="outline" size="sm" onClick={() => togglePremio(org)}>
+                      {org.premioHabilitado ? "Quitar premio" : "Activar premio"}
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => toggleActivo(org)}>
                       {org.activo ? "Desactivar" : "Activar"}
                     </Button>

@@ -12,6 +12,11 @@ export async function PATCH(
   const { id } = await params;
 
   try {
+    const existing = await prisma.evaluacion360Ciclo.findFirst({
+      where: { id, organizationId: user.organizationId },
+    });
+    if (!existing) return apiError("Ciclo no encontrado", 404);
+
     const body = await request.json();
     const activo = body.activo as boolean | undefined;
 
@@ -36,6 +41,11 @@ export async function DELETE(
   const { id } = await params;
 
   try {
+    const existing = await prisma.evaluacion360Ciclo.findFirst({
+      where: { id, organizationId: user.organizationId },
+    });
+    if (!existing) return apiError("Ciclo no encontrado", 404);
+
     await prisma.evaluacion360Ciclo.delete({ where: { id } });
     return apiSuccess({ ok: true });
   } catch {

@@ -247,4 +247,18 @@ export async function seedSystemConfig(organizationId: string): Promise<void> {
       descripcion: "Parámetros bono por KPI (plantilla kpi_simple)",
     },
   });
+
+  await prisma.systemConfig.upsert({
+    where: { organizationId_clave: { organizationId, clave: "workflow.config" } },
+    update: {},
+    create: {
+      organizationId,
+      clave: "workflow.config",
+      valor: {
+        tareaRequiereAprobacion: true,
+        kpiAjusteRequiereAprobacion: true,
+      } as Prisma.InputJsonValue,
+      descripcion: "Workflows de aprobación (tareas y KPIs)",
+    },
+  });
 }

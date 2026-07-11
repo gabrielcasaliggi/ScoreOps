@@ -53,13 +53,26 @@ export async function POST(request: NextRequest) {
       return apiError(parsed.error.issues[0]?.message ?? "Datos inválidos");
     }
 
+    const target = await prisma.user.findFirst({
+      where: {
+        id: parsed.data.userId,
+        organizationId: user.organizationId,
+        activo: true,
+      },
+      select: { id: true, areaId: true },
+    });
+    if (!target) return apiError("Empleado no encontrado", 404);
+    if (user.role === "GERENTE" && target.areaId !== user.areaId) {
+      return apiError("Sin permisos para asignar fuera de tu área", 403);
+    }
+
     const objetivo = await prisma.objetivo.create({
       data: {
         titulo: parsed.data.titulo,
         descripcion: parsed.data.descripcion,
         fechaInicio: new Date(parsed.data.fechaInicio),
         fechaFin: new Date(parsed.data.fechaFin),
-        userId: parsed.data.userId,
+        userId: target.id,
       },
       include: {
         user: { select: { id: true, nombre: true, apellido: true } },

@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandIsotype } from "@/components/brand/brand-isotype";
 import { BRAND } from "@/lib/brand";
+import { reportClientError } from "@/lib/client-observability";
 
 export default function Error({
   error,
@@ -15,7 +16,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[App Error]", error);
+    reportClientError(error);
   }, [error]);
 
   return (

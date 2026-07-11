@@ -8,6 +8,7 @@ export interface OrganizationBranding {
   tagline: string;
   logoUrl: string | null;
   primaryColor: string | null;
+  premioHabilitado: boolean;
 }
 
 export function resolveBranding(org: {
@@ -17,6 +18,7 @@ export function resolveBranding(org: {
   tagline: string | null;
   logoUrl: string | null;
   primaryColor: string | null;
+  premioHabilitado?: boolean;
 }): OrganizationBranding {
   return {
     id: org.id,
@@ -25,6 +27,7 @@ export function resolveBranding(org: {
     tagline: org.tagline ?? BRAND.tagline,
     logoUrl: org.logoUrl,
     primaryColor: org.primaryColor,
+    premioHabilitado: org.premioHabilitado ?? true,
   };
 }
 

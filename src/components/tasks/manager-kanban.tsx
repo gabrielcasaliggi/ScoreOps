@@ -26,7 +26,7 @@ import { cn, formatMinutes } from "@/lib/utils";
 import { countTareasVencidas, toFechaLimiteIso } from "@/lib/task-utils";
 import { TareaFechaLimiteBadge, tareaCardLimiteClass } from "@/components/tasks/tarea-fecha-limite";
 
-type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "COMPLETADA";
+type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "PENDIENTE_APROBACION" | "COMPLETADA";
 
 interface Tarea {
   id: string;
@@ -84,6 +84,13 @@ const COLUMNS: {
     accent: "border-t-blue-500",
     icon: CircleDot,
     hint: "En ejecución",
+  },
+  {
+    key: "PENDIENTE_APROBACION",
+    label: "Por aprobar",
+    accent: "border-t-amber-500",
+    icon: Sparkles,
+    hint: "Revisión gerente",
   },
   {
     key: "COMPLETADA",
@@ -223,7 +230,7 @@ export function ManagerKanban({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3 animate-stagger">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 animate-stagger">
         {COLUMNS.map((col) => {
           const columnTasks = filtered.filter((t) => t.estado === col.key);
           const ColIcon = col.icon;

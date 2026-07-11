@@ -57,3 +57,36 @@ export function assertSameOrg(
 ): boolean {
   return user.organizationId === resourceOrgId;
 }
+
+/** Busca un usuario de la misma organización (previene IDOR cross-tenant). */
+export async function findUserInOrg(organizationId: string, userId: string) {
+  return prisma.user.findFirst({
+    where: { id: userId, organizationId },
+    select: { id: true, areaId: true, organizationId: true },
+  });
+}
+
+export async function findTareaInOrg(organizationId: string, tareaId: string) {
+  return prisma.tarea.findFirst({
+    where: { id: tareaId, user: { organizationId } },
+  });
+}
+
+export async function findObjetivoInOrg(organizationId: string, objetivoId: string) {
+  return prisma.objetivo.findFirst({
+    where: { id: objetivoId, user: { organizationId } },
+    include: {
+      user: { select: { id: true, nombre: true, apellido: true, organizationId: true } },
+      kpis: true,
+      tareas: { select: { id: true, titulo: true, estado: true } },
+    },
+  });
+}
+
+export async function isPremioHabilitado(organizationId: string): Promise<boolean> {
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { premioHabilitado: true },
+  });
+  return org?.premioHabilitado ?? true;
+}

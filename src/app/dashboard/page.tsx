@@ -1,9 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { EmployeeDashboard } from "@/components/dashboard/employee-dashboard";
 import { OperationsDashboard } from "@/components/dashboard/operations-dashboard";
 import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
+import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const [role, setRole] = useState<string | null>(null);
@@ -19,6 +23,7 @@ export default function DashboardPage() {
     comparacion: Parameters<typeof EmployeeDashboard>[0]["comparacion"];
   } | null>(null);
   const [tareas, setTareas] = useState<Parameters<typeof EmployeeDashboard>[0]["tareas"]>([]);
+  const [premioHabilitado, setPremioHabilitado] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -37,6 +42,7 @@ export default function DashboardPage() {
       const userRole = me.user?.role ?? null;
       setRole(userRole);
       setIsAdmin(userRole === "ADMINISTRADOR");
+      setPremioHabilitado(me.user?.premioHabilitado !== false);
 
       if (userRole === "ADMINISTRADOR" || userRole === "GERENTE") {
         setLoading(false);
@@ -75,20 +81,21 @@ export default function DashboardPage() {
     loadData();
   }, [loadData]);
 
-  if (loading) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-sm">Cargando...</p>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   if (loadError) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4 text-center">
-        <p className="text-sm text-destructive">{loadError}</p>
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        tone="amber"
+        title="No se pudo cargar el tablero"
+        description={loadError}
+        action={
+          <Button variant="outline" className="rounded-xl" onClick={loadData}>
+            Reintentar
+          </Button>
+        }
+      />
     );
   }
 
@@ -97,19 +104,23 @@ export default function DashboardPage() {
   }
 
   if (!personalData) {
-    return <p className="text-muted-foreground">No hay datos disponibles.</p>;
+    return (
+      <EmptyState
+        title="Sin datos disponibles"
+        description="Todavía no hay información personal para mostrar."
+      />
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Mi tablero</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Tus tareas y objetivos del día — el premio semestral se calcula aparte
-        </p>
-      </div>
+    <div className="space-y-8">
+      <EmployeeDashboard
+        {...personalData}
+        tareas={tareas}
+        premioHabilitado={premioHabilitado}
+        onRefresh={loadData}
+      />
       <AiInsightsPanel />
-      <EmployeeDashboard {...personalData} tareas={tareas} onRefresh={loadData} />
     </div>
   );
 }

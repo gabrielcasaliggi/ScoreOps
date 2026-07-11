@@ -1,0 +1,14 @@
+---
+description: Convenciones técnicas del proyecto - siempre aplicar
+alwaysApply: true
+---
+
+# Stack y convenciones
+
+- Next.js 16, App Router, TypeScript estricto (no `any` sin justificar)
+- Prisma como única vía de acceso a datos — nada de SQL crudo salvo excepción documentada
+- Tailwind + componentes estilo shadcn/ui — reutilizar componentes existentes en /components/ui antes de crear nuevos
+- Recharts para cualquier visualización de datos
+- Server Components por defecto; Client Components solo cuando haya interactividad real
+- Las rutas de API van en /app/api siguiendo convención REST del proyecto
+- Todo modelo de datos nuevo pasa por una migración de Prisma versionada, nunca editar el schema sin migración

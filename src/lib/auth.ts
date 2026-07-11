@@ -16,6 +16,7 @@ export interface SessionUser {
   areaId: string;
   areaNombre: string;
   organizationId: string;
+  premioHabilitado: boolean;
 }
 
 function getSessionSecret(): string {
@@ -64,7 +65,10 @@ function parseSessionToken(token: string): string | null {
 }
 
 export function toSessionUser(
-  user: User & { area: { nombre: string } }
+  user: User & {
+    area: { nombre: string };
+    organization?: { premioHabilitado: boolean } | null;
+  }
 ): SessionUser {
   return {
     id: user.id,
@@ -75,6 +79,7 @@ export function toSessionUser(
     areaId: user.areaId,
     areaNombre: user.area.nombre,
     organizationId: user.organizationId,
+    premioHabilitado: user.organization?.premioHabilitado ?? true,
   };
 }
 
@@ -127,7 +132,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { area: true },
+    include: {
+      area: true,
+      organization: { select: { premioHabilitado: true } },
+    },
   });
 
   if (!user || !user.activo) return null;

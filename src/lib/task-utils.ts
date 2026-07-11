@@ -8,7 +8,7 @@ export function getTareaLimiteStatus(
   fechaLimite: string | Date | null | undefined,
   estado: string
 ): TareaLimiteStatus {
-  if (!fechaLimite || estado === "COMPLETADA") {
+  if (!fechaLimite || estado === "COMPLETADA" || estado === "PENDIENTE_APROBACION") {
     return { vencida: false, proxima: false, fechaLabel: null };
   }
 

@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
 import { formatPercent } from "@/lib/utils";
 
@@ -76,6 +78,7 @@ interface OperationsDashboardProps {
 const ESTADO_LABEL: Record<string, string> = {
   PENDIENTE: "Pendiente",
   EN_PROCESO: "En proceso",
+  PENDIENTE_APROBACION: "En revisión",
   COMPLETADA: "Completada",
 };
 
@@ -93,55 +96,86 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
     load();
   }, [load]);
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center text-muted-foreground">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   if (!data) {
-    return <p className="text-destructive text-sm">No se pudieron cargar las operaciones.</p>;
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        tone="amber"
+        title="No se pudieron cargar las operaciones"
+        description="Reintentá en unos segundos. Si persiste, revisá la conexión o el estado del sistema."
+        action={
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={load}>
+            Reintentar
+          </Button>
+        }
+      />
+    );
   }
 
   const scopeLabel =
     data.alcance.tipo === "area" ? data.alcance.areaNombre : "Toda la cooperativa";
+  const abiertas = data.resumen.tareasPendientes + data.resumen.tareasEnProceso;
+  const tieneFoco =
+    data.resumen.tareasVencidas > 0 || data.resumen.objetivosEnRiesgo > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <p className="dash-eyebrow">Operaciones</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
             {isAdmin ? "Gestión operativa" : "Mi área"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Seguimiento de tareas y objetivos · <span className="font-medium">{scopeLabel}</span>
+          <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
+            Una vista para decidir qué destrabar hoy ·{" "}
+            <span className="font-medium text-foreground">{scopeLabel}</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" className="rounded-xl" onClick={load}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Actualizar
           </Button>
           <Link href="/dashboard/tareas">
-            <Button size="sm" className="rounded-xl">
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Kanban
+            <Button size="sm" className="rounded-xl shadow-md shadow-primary/20">
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Abrir kanban
             </Button>
           </Link>
         </div>
       </div>
 
-      <AiInsightsPanel />
+      {tieneFoco && (
+        <div className="dash-focus-strip flex flex-wrap items-center gap-2 px-4 py-3.5 text-sm">
+          <span className="font-semibold text-amber-950">Foco hoy</span>
+          {data.resumen.tareasVencidas > 0 && (
+            <Link
+              href="/dashboard/tareas?vencidas=1"
+              className="rounded-lg bg-white/90 px-2.5 py-1 font-medium text-amber-900 shadow-sm ring-1 ring-amber-200/80 transition hover:bg-white"
+            >
+              {data.resumen.tareasVencidas} vencidas
+            </Link>
+          )}
+          {data.resumen.objetivosEnRiesgo > 0 && (
+            <Link
+              href="/dashboard/objetivos"
+              className="rounded-lg bg-white/90 px-2.5 py-1 font-medium text-amber-900 shadow-sm ring-1 ring-amber-200/80 transition hover:bg-white"
+            >
+              {data.resumen.objetivosEnRiesgo} objetivos en riesgo
+            </Link>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 animate-stagger">
         <StatCard
           label="Tareas abiertas"
-          value={data.resumen.tareasPendientes + data.resumen.tareasEnProceso}
+          value={abiertas}
           hint={`${data.resumen.tareasVencidas} vencida(s)`}
           icon={ClipboardList}
-          variant="blue"
+          variant={data.resumen.tareasVencidas > 0 ? "amber" : "blue"}
         />
         <StatCard
           label="Completadas"
@@ -154,7 +188,7 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
           value={data.resumen.objetivosActivos}
           hint={`${data.resumen.objetivosEnRiesgo} en riesgo`}
           icon={Target}
-          variant="slate"
+          variant={data.resumen.objetivosEnRiesgo > 0 ? "amber" : "slate"}
         />
         <StatCard
           label="KPI equipo"
@@ -165,44 +199,49 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <Card className="dash-panel border-0 shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <AlertTriangle className="h-4 w-4" />
+              </span>
               Tareas prioritarias
             </CardTitle>
-            <CardDescription>Vencidas o alta prioridad</CardDescription>
+            <CardDescription>Vencidas o alta prioridad — clic para abrir</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {data.tareasUrgentes.length === 0 && (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                Sin tareas urgentes
-              </p>
-            )}
-            {data.tareasUrgentes.map((t) => (
-              <Link
-                key={t.id}
-                href={`/dashboard/tareas?userId=${t.userId}${t.vencida ? "&vencidas=1" : ""}`}
-                className="flex items-start justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors hover:bg-muted/50"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{t.titulo}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t.user.nombre} {t.user.apellido}
-                    {t.objetivo && ` · ${t.objetivo.titulo}`}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
+          <CardContent className="space-y-2.5">
+            {data.tareasUrgentes.length === 0 ? (
+              <EmptyState
+                icon={CheckCircle2}
+                tone="success"
+                title="Sin urgencias"
+                description="No hay tareas vencidas ni de alta prioridad en el alcance actual."
+                className="py-8"
+              />
+            ) : (
+              data.tareasUrgentes.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/dashboard/tareas?userId=${t.userId}${t.vencida ? "&vencidas=1" : ""}`}
+                  className="group flex items-start justify-between gap-3 rounded-xl border border-transparent bg-white/70 px-3.5 py-3 text-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium group-hover:text-amber-950">{t.titulo}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.user.nombre} {t.user.apellido}
+                      {t.objetivo && ` · ${t.objetivo.titulo}`}
+                    </p>
+                  </div>
                   <Badge variant={t.vencida ? "destructive" : "warning"}>
                     {t.vencida ? "Vencida" : ESTADO_LABEL[t.estado]}
                   </Badge>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            )}
             {data.tareasUrgentes.length > 0 && (
               <Link href="/dashboard/tareas?vencidas=1">
-                <Button variant="ghost" size="sm" className="w-full">
-                  Ver tareas vencidas
+                <Button variant="ghost" size="sm" className="mt-1 w-full rounded-xl">
+                  Ver vencidas
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
@@ -210,47 +249,56 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Target className="h-4 w-4 text-violet-600" />
+        <Card className="dash-panel border-0 shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+                <Target className="h-4 w-4" />
+              </span>
               Objetivos en seguimiento
             </CardTitle>
             <CardDescription>KPI bajo o vencimiento próximo</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {data.objetivosRiesgo.length === 0 && (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                Objetivos al día
-              </p>
-            )}
-            {data.objetivosRiesgo.map((o) => (
-              <div key={o.id} className="space-y-2">
-                <div className="flex justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{o.titulo}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {o.user.nombre} {o.user.apellido}
-                      {isAdmin && ` · ${o.user.area.nombre}`}
-                    </p>
+            {data.objetivosRiesgo.length === 0 ? (
+              <EmptyState
+                icon={Target}
+                tone="success"
+                title="Objetivos al día"
+                description="Ningún objetivo del alcance está en riesgo por ahora."
+                className="py-8"
+              />
+            ) : (
+              data.objetivosRiesgo.map((o) => (
+                <div key={o.id} className="space-y-2 rounded-xl bg-white/60 p-3 ring-1 ring-slate-200/70">
+                  <div className="flex justify-between gap-2 text-sm">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{o.titulo}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {o.user.nombre} {o.user.apellido}
+                        {isAdmin && ` · ${o.user.area.nombre}`}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {new Date(o.fechaFin).toLocaleDateString("es-AR")}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {new Date(o.fechaFin).toLocaleDateString("es-AR")}
-                  </span>
+                  <Progress value={o.kpiPromedio} className="h-2" />
+                  <div className="flex justify-between text-xs">
+                    <span className="font-medium text-teal-700">
+                      {formatPercent(o.kpiPromedio)}
+                    </span>
+                    {o.proximoVencer && (
+                      <Badge variant="warning" className="text-[10px]">
+                        Vence pronto
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <Progress value={o.kpiPromedio} className="h-2" />
-                <div className="flex justify-between text-xs">
-                  <span className="text-emerald-600 font-medium">{formatPercent(o.kpiPromedio)}</span>
-                  {o.proximoVencer && (
-                    <Badge variant="warning" className="text-[10px]">
-                      Vence pronto
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
             <Link href="/dashboard/objetivos">
-              <Button variant="ghost" size="sm" className="w-full">
+              <Button variant="ghost" size="sm" className="w-full rounded-xl">
                 Ver todos los objetivos
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -259,19 +307,21 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
         </Card>
       </div>
 
+      <AiInsightsPanel />
+
       {isAdmin && data.porArea && data.porArea.length > 0 && (
-        <Card className="glass-card">
+        <Card className="dash-panel border-0 shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Resumen por área</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table w-full text-sm">
               <thead>
-                <tr className="text-left text-muted-foreground border-b">
-                  <th className="pb-2 font-medium">Área</th>
-                  <th className="pb-2 font-medium text-right">Empleados</th>
-                  <th className="pb-2 font-medium text-right">Tareas abiertas</th>
-                  <th className="pb-2 font-medium text-right">KPI prom.</th>
+                <tr className="border-b text-left">
+                  <th className="pb-2">Área</th>
+                  <th className="pb-2 text-right">Empleados</th>
+                  <th className="pb-2 text-right">Tareas abiertas</th>
+                  <th className="pb-2 text-right">KPI prom.</th>
                 </tr>
               </thead>
               <tbody>
@@ -280,7 +330,9 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
                     <td className="py-3 font-medium">{a.area}</td>
                     <td className="py-3 text-right tabular-nums">{a.empleados}</td>
                     <td className="py-3 text-right tabular-nums">{a.tareasAbiertas}</td>
-                    <td className="py-3 text-right tabular-nums">{formatPercent(a.kpiPromedio)}</td>
+                    <td className="py-3 text-right tabular-nums">
+                      {formatPercent(a.kpiPromedio)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -289,32 +341,32 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
         </Card>
       )}
 
-      <Card className="glass-card">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="dash-panel border-0 shadow-none">
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-slate-500" />
               {isAdmin ? "Equipo por persona" : "Personas del área"}
             </CardTitle>
             <CardDescription>Ordenado por tareas abiertas</CardDescription>
           </div>
           <Link href="/dashboard/equipo">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="rounded-xl">
               Ver equipos
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
+          <table className="data-table w-full min-w-[520px] text-sm">
             <thead>
-              <tr className="text-left text-muted-foreground border-b">
-                <th className="pb-2 font-medium">Empleado</th>
-                {isAdmin && <th className="pb-2 font-medium">Área</th>}
-                <th className="pb-2 font-medium text-right">Abiertas</th>
-                <th className="pb-2 font-medium text-right">Vencidas</th>
-                <th className="pb-2 font-medium text-right">Objetivos</th>
-                <th className="pb-2 font-medium text-right">KPI</th>
+              <tr className="border-b text-left">
+                <th className="pb-2">Empleado</th>
+                {isAdmin && <th className="pb-2">Área</th>}
+                <th className="pb-2 text-right">Abiertas</th>
+                <th className="pb-2 text-right">Vencidas</th>
+                <th className="pb-2 text-right">Objetivos</th>
+                <th className="pb-2 text-right">KPI</th>
               </tr>
             </thead>
             <tbody>
@@ -323,15 +375,13 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
                   <td className="py-3 font-medium">
                     {p.nombre} {p.apellido}
                   </td>
-                  {isAdmin && (
-                    <td className="py-3 text-muted-foreground">{p.area}</td>
-                  )}
+                  {isAdmin && <td className="py-3 text-muted-foreground">{p.area}</td>}
                   <td className="py-3 text-right tabular-nums">{p.tareasAbiertas}</td>
                   <td className="py-3 text-right tabular-nums">
                     {p.tareasVencidas > 0 ? (
                       <Link
                         href={`/dashboard/tareas?userId=${p.userId}&vencidas=1`}
-                        className="text-destructive hover:underline"
+                        className="font-medium text-destructive hover:underline"
                       >
                         {p.tareasVencidas}
                       </Link>
@@ -348,15 +398,15 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
         </CardContent>
       </Card>
 
-      <div className="rounded-2xl border border-violet-200/60 bg-violet-50/40 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200/50 bg-gradient-to-r from-teal-50/80 to-indigo-50/40 px-5 py-4">
         <div>
-          <p className="font-semibold text-violet-900">Premio semestral Art. 49</p>
+          <p className="font-semibold text-slate-900">Premio semestral Art. 49</p>
           <p className="text-sm text-muted-foreground">
             Liquidación, tramos y metas colectivas en módulo aparte
           </p>
         </div>
         <Link href="/dashboard/premio">
-          <Button variant="outline" className="rounded-xl bg-white/80 border-violet-200">
+          <Button variant="outline" className="rounded-xl border-teal-200 bg-white/90">
             Ir a Premio
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

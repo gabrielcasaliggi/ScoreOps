@@ -1,15 +1,16 @@
 "use client";
 
 export const CHART = {
-  kpi: "#10b981",
-  kpiLight: "#6ee7b7",
-  efficiency: "#3b82f6",
+  kpi: "#0d9488",
+  kpiLight: "#5eead4",
+  efficiency: "#2563eb",
   efficiencyLight: "#93c5fd",
-  premio: "#8b5cf6",
+  premio: "#7c3aed",
   premioLight: "#c4b5fd",
-  area: "#6366f1",
-  grid: "#e2e8f0",
-  muted: "#94a3b8",
+  area: "#0f766e",
+  grid: "rgba(148, 163, 184, 0.28)",
+  muted: "#64748b",
+  cursor: "rgba(15, 23, 42, 0.04)",
 } as const;
 
 export const chartAxisStyle = {
@@ -18,36 +19,42 @@ export const chartAxisStyle = {
   fontFamily: "inherit",
 };
 
+export const chartMargin = { top: 8, right: 8, left: -8, bottom: 0 };
+
 export function ChartTooltip({
   active,
   payload,
   label,
+  suffix = "%",
 }: {
   active?: boolean;
-  payload?: { name: string; value: number; color: string }[];
+  payload?: { name: string; value: number; color: string; payload?: Record<string, unknown> }[];
   label?: string;
+  suffix?: string;
 }) {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-xl border bg-white/95 px-4 py-3 shadow-xl backdrop-blur-sm">
+    <div className="chart-tooltip rounded-2xl border border-white/70 bg-white/95 px-4 py-3 shadow-2xl shadow-slate-900/10 backdrop-blur-md">
       {label && (
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
           {label}
         </p>
       )}
       <div className="space-y-1.5">
         {payload.map((entry) => (
-          <div key={entry.name} className="flex items-center justify-between gap-6 text-sm">
-            <span className="flex items-center gap-2">
+          <div key={entry.name} className="flex items-center justify-between gap-8 text-sm">
+            <span className="flex items-center gap-2 text-slate-600">
               <span
-                className="h-2.5 w-2.5 rounded-full"
+                className="h-2.5 w-2.5 rounded-full ring-2 ring-white shadow-sm"
                 style={{ backgroundColor: entry.color }}
               />
               {entry.name}
             </span>
-            <span className="font-semibold tabular-nums">
-              {typeof entry.value === "number" ? `${Math.round(entry.value * 10) / 10}%` : entry.value}
+            <span className="font-semibold tabular-nums text-slate-900">
+              {typeof entry.value === "number"
+                ? `${Math.round(entry.value * 10) / 10}${suffix}`
+                : entry.value}
             </span>
           </div>
         ))}
@@ -60,21 +67,24 @@ export function ChartGradientDefs() {
   return (
     <defs>
       <linearGradient id="gradKpi" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor={CHART.kpi} stopOpacity={0.9} />
-        <stop offset="100%" stopColor={CHART.kpiLight} stopOpacity={0.6} />
+        <stop offset="0%" stopColor={CHART.kpi} stopOpacity={1} />
+        <stop offset="100%" stopColor={CHART.kpiLight} stopOpacity={0.55} />
       </linearGradient>
       <linearGradient id="gradEfficiency" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor={CHART.efficiency} stopOpacity={0.9} />
-        <stop offset="100%" stopColor={CHART.efficiencyLight} stopOpacity={0.6} />
+        <stop offset="0%" stopColor={CHART.efficiency} stopOpacity={1} />
+        <stop offset="100%" stopColor={CHART.efficiencyLight} stopOpacity={0.5} />
       </linearGradient>
       <linearGradient id="gradPremio" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor={CHART.premio} stopOpacity={0.95} />
-        <stop offset="100%" stopColor={CHART.premioLight} stopOpacity={0.5} />
+        <stop offset="0%" stopColor={CHART.premio} stopOpacity={1} />
+        <stop offset="100%" stopColor={CHART.premioLight} stopOpacity={0.45} />
       </linearGradient>
       <linearGradient id="gradArea" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor={CHART.area} stopOpacity={0.85} />
-        <stop offset="100%" stopColor={CHART.premioLight} stopOpacity={0.7} />
+        <stop offset="0%" stopColor={CHART.area} stopOpacity={0.95} />
+        <stop offset="100%" stopColor={CHART.kpiLight} stopOpacity={0.75} />
       </linearGradient>
+      <filter id="barSoftShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.08" />
+      </filter>
     </defs>
   );
 }

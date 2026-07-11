@@ -4,9 +4,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/api";
 import { areaInOrg, resolveDefaultOrganizationId, userByOrgEmail } from "@/lib/tenant";
+import { extractApiKeyFromRequest, hasScope, resolveApiKey } from "@/lib/api-key";
 
 const syncSchema = z.object({
-  apiKey: z.string().min(1),
+  apiKey: z.string().min(1).optional(),
   empleados: z
     .array(
       z.object({
@@ -22,16 +23,34 @@ const syncSchema = z.object({
     .optional(),
 });
 
-/**
- * Stub de integración RRHH.
- * Requiere INTEGRATION_API_KEY en .env para autenticar llamadas externas.
- */
-export async function POST(request: NextRequest) {
-  const expectedKey = process.env.INTEGRATION_API_KEY;
-  if (!expectedKey) {
-    return apiError("Integración RRHH no configurada en el servidor", 503);
+async function resolveSyncAuth(request: NextRequest, bodyApiKey?: string) {
+  const headerKey = extractApiKeyFromRequest(request);
+  if (headerKey) {
+    const ctx = await resolveApiKey(headerKey);
+    if (!ctx) return { error: apiError("API key inválida o expirada", 401) };
+    if (!hasScope(ctx, "rrhh:sync")) {
+      return { error: apiError("Scope requerido: rrhh:sync", 403) };
+    }
+    return { error: null, organizationId: ctx.organizationId };
   }
 
+  const expectedKey = process.env.INTEGRATION_API_KEY;
+  if (!expectedKey) {
+    return { error: apiError("Integración RRHH no configurada. Usá API key por org (X-Api-Key) o INTEGRATION_API_KEY", 503) };
+  }
+  if (bodyApiKey !== expectedKey) {
+    return { error: apiError("API key inválida", 401) };
+  }
+
+  const organizationId = await resolveDefaultOrganizationId();
+  return { error: null, organizationId };
+}
+
+/**
+ * Integración RRHH — sincronización de empleados.
+ * Auth: header X-Api-Key (scope rrhh:sync) o legacy body.apiKey + INTEGRATION_API_KEY.
+ */
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const parsed = syncSchema.safeParse(body);
@@ -39,19 +58,20 @@ export async function POST(request: NextRequest) {
       return apiError(parsed.error.issues[0]?.message ?? "Payload inválido");
     }
 
-    if (parsed.data.apiKey !== expectedKey) {
-      return apiError("API key inválida", 401);
-    }
+    const auth = await resolveSyncAuth(request, parsed.data.apiKey);
+    if (auth.error) return auth.error;
+
+    const organizationId = auth.organizationId;
 
     if (!parsed.data.empleados?.length) {
       return apiSuccess({
         status: "ok",
         message: "Endpoint activo. Enviá empleados[] para sincronizar.",
         sincronizados: 0,
+        organizationId,
       });
     }
 
-    const organizationId = await resolveDefaultOrganizationId();
     const areas = await prisma.area.findMany({ where: areaInOrg(organizationId) });
     const areaByName = new Map(areas.map((a) => [a.nombre.toLowerCase(), a.id]));
     let sincronizados = 0;
@@ -98,7 +118,7 @@ export async function POST(request: NextRequest) {
       sincronizados++;
     }
 
-    return apiSuccess({ status: "ok", sincronizados, errores });
+    return apiSuccess({ status: "ok", sincronizados, errores, organizationId });
   } catch (err) {
     console.error("[Integrations RRHH]", err);
     return apiError("Error en sincronización", 500);
@@ -107,8 +127,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   return apiSuccess({
-    status: "stub",
-    message: "POST /api/integrations/rrhh/sync con apiKey y empleados[]",
-    configurado: Boolean(process.env.INTEGRATION_API_KEY),
+    status: "active",
+    message: "POST con empleados[] — auth: X-Api-Key (rrhh:sync) o legacy apiKey",
+    openapi: "/api/v1/openapi",
+    legacyConfigurado: Boolean(process.env.INTEGRATION_API_KEY),
   });
 }

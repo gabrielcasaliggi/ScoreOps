@@ -22,6 +22,7 @@ const createOrgSchema = z.object({
   adminPassword: z.string().min(6),
   adminNombre: z.string().min(1),
   adminApellido: z.string().min(1),
+  premioHabilitado: z.boolean().default(true),
 });
 
 export async function GET() {
@@ -44,6 +45,7 @@ export async function GET() {
         tagline: o.tagline,
         primaryColor: o.primaryColor,
         activo: o.activo,
+        premioHabilitado: o.premioHabilitado,
         usuarios: o._count.users,
         areas: o._count.areas,
         createdAt: o.createdAt,
@@ -79,8 +81,13 @@ export async function POST(request: NextRequest) {
         data: {
           slug: data.slug,
           name: data.name,
-          tagline: data.tagline ?? "Puntajes, tareas y premio a la productividad",
+          tagline:
+            data.tagline ??
+            (data.premioHabilitado
+              ? "Puntajes, tareas y premio a la productividad"
+              : "Gestión de tareas, objetivos y KPIs"),
           primaryColor: data.primaryColor ?? "#5b4ae0",
+          premioHabilitado: data.premioHabilitado,
         },
       });
 

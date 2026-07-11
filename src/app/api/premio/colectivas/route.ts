@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { ensureMetasColectivas } from "@/lib/metas-colectivas";
 import { parsePeriodoParam, periodoToApiPayload } from "@/lib/productivity-period";
+import { isPremioHabilitado } from "@/lib/tenant";
 
 const updateMetaSchema = z.object({
   periodoId: z.string().optional(),
@@ -16,6 +17,10 @@ const updateMetaSchema = z.object({
 export async function GET(request: NextRequest) {
   const { error, user } = await requireAuth(["ADMINISTRADOR", "GERENTE"]);
   if (error || !user) return error;
+
+  if (!(await isPremioHabilitado(user.organizationId))) {
+    return apiError("Premio no habilitado en esta organización", 403);
+  }
 
   const { searchParams } = new URL(request.url);
   const period = parsePeriodoParam(searchParams.get("periodo"));
@@ -30,6 +35,10 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const { error, user } = await requireAuth(["ADMINISTRADOR"]);
   if (error || !user) return error;
+
+  if (!(await isPremioHabilitado(user.organizationId))) {
+    return apiError("Premio no habilitado en esta organización", 403);
+  }
 
   try {
     const body = await request.json();

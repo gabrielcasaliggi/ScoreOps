@@ -15,17 +15,19 @@ export async function GET(request: NextRequest) {
   let cicloId = searchParams.get("cicloId");
 
   if (!cicloId) {
-    const activo = await getActiveCiclo();
+    const activo = await getActiveCiclo(user.organizationId);
     if (!activo) return apiSuccess({ pendientes: [], ciclo: null });
     cicloId = activo.id;
   }
 
-  const ciclo = await prisma.evaluacion360Ciclo.findUnique({ where: { id: cicloId } });
+  const ciclo = await prisma.evaluacion360Ciclo.findFirst({
+    where: { id: cicloId, organizationId: user.organizationId },
+  });
   if (!ciclo) return apiError("Ciclo no encontrado", 404);
 
   const [usuarios, respuestas] = await Promise.all([
     prisma.user.findMany({
-      where: { activo: true },
+      where: { activo: true, organizationId: user.organizationId },
       select: { id: true, nombre: true, apellido: true, role: true, areaId: true, activo: true },
     }),
     prisma.evaluacion360Respuesta.findMany({

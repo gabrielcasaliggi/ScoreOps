@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Award, Calendar, RefreshCw, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
+import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { TeamDashboard } from "@/components/dashboard/team-dashboard";
 import { MetasColectivasPanel } from "@/components/dashboard/metas-colectivas-panel";
 import { PremioFormulaExplainer } from "@/components/dashboard/premio-formula-explainer";
+import { BenchmarkPanel } from "@/components/dashboard/benchmark-panel";
 import type { EmployeeProductivity } from "@/lib/productivity";
 import { formatPercent } from "@/lib/utils";
 
@@ -78,12 +80,7 @@ export function CoordinatorDashboard({ isAdmin, userAreaNombre }: CoordinatorDas
   }, [loadData]);
 
   if (loading && !data) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-sm">Cargando panel de coordinación...</p>
-      </div>
-    );
+    return <DashboardSkeleton stats={3} panels={2} />;
   }
 
   if (!data) return null;
@@ -220,6 +217,8 @@ export function CoordinatorDashboard({ isAdmin, userAreaNombre }: CoordinatorDas
       <MetasColectivasPanel isAdmin={isAdmin} />
 
       <PremioFormulaExplainer />
+
+      <BenchmarkPanel />
 
       <TeamDashboard
         resumen={data.resumen}

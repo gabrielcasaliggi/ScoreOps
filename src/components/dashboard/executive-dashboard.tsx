@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/ui/stat-card";
+import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatPercent } from "@/lib/utils";
 
 interface EjecutivoData {
@@ -62,10 +64,10 @@ interface EjecutivoData {
   };
 }
 
-const SALUD_VARIANT: Record<string, "emerald" | "slate" | "violet"> = {
+const SALUD_VARIANT: Record<string, "emerald" | "amber" | "danger"> = {
   Saludable: "emerald",
-  Atención: "violet",
-  Crítico: "slate",
+  Atención: "amber",
+  Crítico: "danger",
 };
 
 export function ExecutiveDashboard() {
@@ -95,34 +97,35 @@ export function ExecutiveDashboard() {
   }, [load]);
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center text-muted-foreground">
-        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-        Cargando vista ejecutiva...
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error || !data) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <p className="text-sm text-destructive">{error || "Sin datos"}</p>
-        <Button variant="outline" onClick={load}>
-          Reintentar
-        </Button>
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        tone="amber"
+        title={error || "Sin datos"}
+        description="No pudimos cargar la vista ejecutiva."
+        action={
+          <Button variant="outline" className="rounded-xl" onClick={load}>
+            Reintentar
+          </Button>
+        }
+      />
     );
   }
 
-  const saludVariant = SALUD_VARIANT[data.salud.etiqueta] ?? "slate";
+  const saludVariant = SALUD_VARIANT[data.salud.etiqueta] ?? "amber";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Vista ejecutiva</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {data.periodo.label} · Plantilla: {data.plantillaPremio.nombre}
+          <p className="dash-eyebrow">Consejo</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">Vista ejecutiva</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {data.periodo.label} · {data.plantillaPremio.nombre}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -133,7 +136,7 @@ export function ExecutiveDashboard() {
           <Button
             variant="default"
             size="sm"
-            className="rounded-xl"
+            className="rounded-xl shadow-md shadow-primary/20"
             onClick={() => {
               window.location.href = "/api/export/ejecutivo";
             }}
@@ -144,7 +147,36 @@ export function ExecutiveDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {(data.resumen.tareasVencidas > 0 ||
+        data.resumen.objetivosEnRiesgo > 0 ||
+        data.distribucionCarga.sobrecargados.length > 0) && (
+        <div className="dash-focus-strip flex flex-wrap items-center gap-2 px-4 py-3.5 text-sm">
+          <span className="font-semibold text-amber-950">Hoy</span>
+          {data.resumen.tareasVencidas > 0 && (
+            <Link
+              href="/dashboard/tareas?vencidas=1"
+              className="rounded-lg bg-white/90 px-2.5 py-1 font-medium text-amber-900 shadow-sm ring-1 ring-amber-200/80"
+            >
+              {data.resumen.tareasVencidas} vencidas
+            </Link>
+          )}
+          {data.resumen.objetivosEnRiesgo > 0 && (
+            <Link
+              href="/dashboard/objetivos"
+              className="rounded-lg bg-white/90 px-2.5 py-1 font-medium text-amber-900 shadow-sm ring-1 ring-amber-200/80"
+            >
+              {data.resumen.objetivosEnRiesgo} objetivos en riesgo
+            </Link>
+          )}
+          {data.distribucionCarga.sobrecargados.length > 0 && (
+            <span className="rounded-lg bg-white/90 px-2.5 py-1 font-medium text-amber-900 shadow-sm ring-1 ring-amber-200/80">
+              {data.distribucionCarga.sobrecargados.length} sobrecargadas
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 animate-stagger">
         <StatCard
           label="Salud operativa"
           value={`${data.salud.score}/100`}
@@ -164,7 +196,7 @@ export function ExecutiveDashboard() {
           value={data.resumen.tareasVencidas}
           hint={`${data.resumen.tareasAbiertas} abiertas en total`}
           icon={AlertTriangle}
-          variant={data.resumen.tareasVencidas > 0 ? "slate" : "emerald"}
+          variant={data.resumen.tareasVencidas > 0 ? "danger" : "emerald"}
         />
         <StatCard
           label={data.plantillaPremio.tienePremioMonetario ? "Premio prom." : "Score gestión"}
@@ -232,13 +264,21 @@ export function ExecutiveDashboard() {
                   {data.distribucionCarga.sobrecargados.map((p) => (
                     <li
                       key={p.userId}
-                      className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50/40 px-3 py-2 text-sm"
                     >
                       <span>
                         {p.nombre} {p.apellido}
                         <span className="text-muted-foreground ml-1">({p.area})</span>
                       </span>
-                      <Badge variant="outline">{p.tareasAbiertas} tareas</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{p.tareasAbiertas} tareas</Badge>
+                        <Link href={`/dashboard/tareas?userId=${p.userId}`}>
+                          <Button variant="outline" size="sm" className="h-7 rounded-lg text-xs">
+                            Ver tareas
+                            <ArrowRight className="ml-1 h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -252,13 +292,21 @@ export function ExecutiveDashboard() {
                   {data.distribucionCarga.conCapacidad.map((p) => (
                     <li
                       key={p.userId}
-                      className="flex items-center justify-between rounded-lg border border-dashed px-3 py-2 text-sm"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-sm"
                     >
                       <span>
                         {p.nombre} {p.apellido}
                         <span className="text-muted-foreground ml-1">({p.area})</span>
                       </span>
-                      <Badge variant="outline">{p.tareasAbiertas} tareas</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{p.tareasAbiertas} tareas</Badge>
+                        <Link href={`/dashboard/tareas?userId=${p.userId}`}>
+                          <Button variant="ghost" size="sm" className="h-7 rounded-lg text-xs">
+                            Asignar
+                            <ArrowRight className="ml-1 h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </div>
                     </li>
                   ))}
                 </ul>

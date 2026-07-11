@@ -4,6 +4,10 @@ import { calculateKpiCompliance, calculateTemporalEfficiency } from "@/lib/produ
 import { getSemesterPeriod } from "@/lib/productivity-period";
 import { generatePersonalInsights, generateTeamInsights } from "@/lib/ai-insights";
 import { generateWeeklySummary } from "@/lib/llm-summary";
+import {
+  buildManagerContextFromStats,
+  generateManagerWeeklySummary,
+} from "@/lib/manager-summary";
 import { getTareaLimiteStatus } from "@/lib/task-utils";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 
@@ -18,6 +22,19 @@ function startOfWeek(date: Date): Date {
   return d;
 }
 
+async function countTeamTasksCompletedThisWeek(organizationId: string, areaId?: string | null) {
+  const weekStart = startOfWeek(new Date());
+  const where: Record<string, unknown> = {
+    estado: "COMPLETADA",
+    completedAt: { gte: weekStart },
+    user: { organizationId, role: "EMPLEADO" },
+  };
+  if (areaId) {
+    where.user = { organizationId, role: "EMPLEADO", areaId };
+  }
+  return prisma.tarea.count({ where });
+}
+
 export async function GET() {
   const { error, user } = await requireAuth();
   if (error || !user) return error;
@@ -26,8 +43,15 @@ export async function GET() {
 
   try {
     if (user.role === "ADMINISTRADOR" || user.role === "GERENTE") {
+      const empleadoWhere: Record<string, unknown> = {
+        role: "EMPLEADO",
+        activo: true,
+        organizationId: user.organizationId,
+      };
+      if (user.role === "GERENTE") empleadoWhere.areaId = user.areaId;
+
       const empleados = await prisma.user.findMany({
-        where: { role: "EMPLEADO", organizationId: user.organizationId },
+        where: empleadoWhere,
         include: {
           area: true,
           objetivos: { include: { kpis: true } },
@@ -41,7 +65,27 @@ export async function GET() {
       );
 
       const insights = generateTeamInsights(stats);
-      return apiSuccess({ insights, scope: "equipo" });
+
+      const tareasCompletadasSemana = await countTeamTasksCompletedThisWeek(
+        user.organizationId,
+        user.role === "GERENTE" ? user.areaId : null
+      );
+
+      const alertasAltas = insights.filter((i) => i.prioridad === "alta").length;
+      const managerCtx = buildManagerContextFromStats(
+        stats,
+        { nombre: user.nombre, apellido: user.apellido },
+        tareasCompletadasSemana,
+        alertasAltas
+      );
+      const resumenGerencial = await generateManagerWeeklySummary(managerCtx);
+
+      return apiSuccess({
+        insights,
+        scope: "equipo",
+        resumenSemanal: resumenGerencial.texto,
+        resumenOrigen: resumenGerencial.origen,
+      });
     }
 
     const empleado = await prisma.user.findUnique({

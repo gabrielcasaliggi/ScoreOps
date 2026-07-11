@@ -23,6 +23,7 @@ export default async function DashboardLayout({
       tagline: BRAND.tagline,
       logoUrl: null,
       primaryColor: null,
+      premioHabilitado: true,
     });
 
   return (

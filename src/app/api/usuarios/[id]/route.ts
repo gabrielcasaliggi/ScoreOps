@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { updateUserSchema } from "@/lib/user-validation";
+import { findUserInOrg } from "@/lib/tenant";
 
 export async function PATCH(
   request: NextRequest,
@@ -20,7 +21,7 @@ export async function PATCH(
       return apiError(parsed.error.issues[0]?.message ?? "Datos inválidos");
     }
 
-    const existing = await prisma.user.findUnique({ where: { id } });
+    const existing = await findUserInOrg(user.organizationId, id);
     if (!existing) return apiError("Usuario no encontrado", 404);
 
     const data = parsed.data;
@@ -34,7 +35,13 @@ export async function PATCH(
     if (data.sueldoBasico !== undefined) updateData.sueldoBasico = data.sueldoBasico;
     if (data.valorAntiguedad !== undefined) updateData.valorAntiguedad = data.valorAntiguedad;
     if (data.role) updateData.role = data.role;
-    if (data.areaId) updateData.areaId = data.areaId;
+    if (data.areaId) {
+      const area = await prisma.area.findFirst({
+        where: { id: data.areaId, organizationId: user.organizationId },
+      });
+      if (!area) return apiError("Área no encontrada en tu organización", 404);
+      updateData.areaId = data.areaId;
+    }
     if (data.activo !== undefined) {
       updateData.activo = data.activo;
       updateData.fechaBaja = data.activo ? null : new Date();
@@ -87,7 +94,7 @@ export async function DELETE(
   }
 
   try {
-    const existing = await prisma.user.findUnique({ where: { id } });
+    const existing = await findUserInOrg(user.organizationId, id);
     if (!existing) return apiError("Usuario no encontrado", 404);
 
     const updated = await prisma.user.update({

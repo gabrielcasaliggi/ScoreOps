@@ -4,6 +4,7 @@ import { Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatPercent } from "@/lib/utils";
 
 export interface ObjetivoResumen {
@@ -24,13 +25,32 @@ interface EmployeeObjetivosPanelProps {
 }
 
 export function EmployeeObjetivosPanel({ objetivos }: EmployeeObjetivosPanelProps) {
-  if (objetivos.length === 0) return null;
+  if (objetivos.length === 0) {
+    return (
+      <Card className="dash-panel border-0 shadow-none h-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4 text-teal-700" />
+            Mis objetivos del semestre
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={Target}
+            title="Sin objetivos asignados"
+            description="Pedile a tu gerente que cargue los del período."
+            className="py-6"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="glass-card">
+    <Card className="dash-panel border-0 shadow-none h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Target className="h-4 w-4 text-primary" />
+          <Target className="h-4 w-4 text-teal-700" />
           Mis objetivos del semestre
         </CardTitle>
       </CardHeader>

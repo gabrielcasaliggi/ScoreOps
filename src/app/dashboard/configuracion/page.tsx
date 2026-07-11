@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MetasColectivasPanel } from "@/components/dashboard/metas-colectivas-panel";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
+import { ApiKeysPanel } from "@/components/dashboard/api-keys-panel";
 
 interface Usuario {
   id: string;
@@ -40,6 +41,11 @@ interface KpiSimpleConfig {
   porcentajeMaximo: number;
 }
 
+interface WorkflowConfig {
+  tareaRequiereAprobacion: boolean;
+  kpiAjusteRequiereAprobacion: boolean;
+}
+
 export default function ConfiguracionPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -64,12 +70,16 @@ export default function ConfiguracionPage() {
     primaryColor: "#2563eb",
   });
   const [orgLoading, setOrgLoading] = useState(false);
+  const [workflowConfig, setWorkflowConfig] = useState<WorkflowConfig | null>(null);
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [premioHabilitado, setPremioHabilitado] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
         setRole(data.user?.role ?? null);
+        setPremioHabilitado(data.user?.premioHabilitado !== false);
         if (data.user?.role === "ADMINISTRADOR" || data.user?.role === "GERENTE") {
           fetch("/api/usuarios")
             .then((r) => r.json())
@@ -83,6 +93,7 @@ export default function ConfiguracionPage() {
               setPremioTemplate(cfg.premioTemplate ?? "art49_cooperativo");
               setKpiSimpleConfig(cfg.kpiSimple ?? null);
               setPlantillas(cfg.plantillas ?? []);
+              setWorkflowConfig(cfg.workflow ?? null);
             });
           fetch("/api/organization")
             .then((r) => r.json())
@@ -203,6 +214,29 @@ export default function ConfiguracionPage() {
     setPremioTemplate(data.premioTemplate);
     setKpiSimpleConfig(data.kpiSimple);
     setMessage("Plantilla de premio actualizada");
+  }
+
+  async function handleWorkflowConfig(e: React.FormEvent) {
+    e.preventDefault();
+    if (!workflowConfig) return;
+    setWorkflowLoading(true);
+    setError("");
+    setMessage("");
+
+    const res = await fetch("/api/admin/config", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workflow: workflowConfig }),
+    });
+    const data = await res.json();
+    setWorkflowLoading(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Error al guardar workflows");
+      return;
+    }
+    setWorkflowConfig(data.workflow);
+    setMessage("Configuración de workflows actualizada");
   }
 
   async function handleOrgBranding(e: React.FormEvent) {
@@ -356,7 +390,7 @@ export default function ConfiguracionPage() {
         </Card>
       )}
 
-      {isAdmin && plantillas.length > 0 && (
+      {isAdmin && premioHabilitado && plantillas.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Motor de premio</CardTitle>
@@ -427,7 +461,7 @@ export default function ConfiguracionPage() {
         </Card>
       )}
 
-      {isAdmin && premioConfig && premioTemplate === "art49_cooperativo" && (
+      {isAdmin && premioHabilitado && premioConfig && premioTemplate === "art49_cooperativo" && (
         <Card>
           <CardHeader>
             <CardTitle>Premio semestral — Art. 49</CardTitle>
@@ -519,7 +553,55 @@ export default function ConfiguracionPage() {
         </Card>
       )}
 
-      {isAdmin && <MetasColectivasPanel isAdmin />}
+      {isAdmin && workflowConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Workflows de aprobación</CardTitle>
+            <CardDescription>
+              Controlá si los empleados necesitan aprobación para cerrar tareas o actualizar KPIs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleWorkflowConfig} className="space-y-4">
+              <label className="flex items-center gap-3 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={workflowConfig.tareaRequiereAprobacion}
+                  onChange={(e) =>
+                    setWorkflowConfig({
+                      ...workflowConfig,
+                      tareaRequiereAprobacion: e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-input"
+                />
+                Tareas: el empleado envía a revisión al marcar completada
+              </label>
+              <label className="flex items-center gap-3 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={workflowConfig.kpiAjusteRequiereAprobacion}
+                  onChange={(e) =>
+                    setWorkflowConfig({
+                      ...workflowConfig,
+                      kpiAjusteRequiereAprobacion: e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-input"
+                />
+                KPIs: el empleado solicita ajuste (no aplica directo)
+              </label>
+              <Button type="submit" disabled={workflowLoading}>
+                {workflowLoading ? "Guardando..." : "Guardar workflows"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAdmin && <ApiKeysPanel />}
+
+      {isAdmin && premioHabilitado && <MetasColectivasPanel isAdmin />}
 
       {isManager && (
         <Card>
@@ -559,28 +641,6 @@ export default function ConfiguracionPage() {
               </div>
               <Button type="submit">Restablecer contraseña</Button>
             </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Integración RRHH</CardTitle>
-            <CardDescription>
-              Endpoint stub para sincronización futura con sistema de RRHH
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>
-              <code className="text-xs bg-muted px-1 rounded">POST /api/integrations/rrhh/sync</code>
-            </p>
-            <p>
-              Configurá <code className="text-xs bg-muted px-1 rounded">INTEGRATION_API_KEY</code> en
-              el servidor. Payload: <code className="text-xs">apiKey</code> +{" "}
-              <code className="text-xs">empleados[]</code> con externalId, email, nombre, apellido,
-              area.
-            </p>
           </CardContent>
         </Card>
       )}

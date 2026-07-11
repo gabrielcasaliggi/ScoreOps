@@ -52,7 +52,10 @@ export async function POST(request: NextRequest) {
           email: parsed.data.email.toLowerCase(),
         },
       },
-      include: { area: true },
+      include: {
+        area: true,
+        organization: { select: { premioHabilitado: true } },
+      },
     });
 
     if (!user) {

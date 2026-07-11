@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Award, ArrowRight, AlertTriangle } from "lucide-react";
+import { Award, ArrowRight, AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PremioArt49Breakdown } from "@/components/dashboard/premio-art49-breakdown";
+import { PremioExplainerPanel } from "@/components/dashboard/premio-explainer-panel";
+import { BenchmarkPanel } from "@/components/dashboard/benchmark-panel";
 import { EmployeeObjetivosPanel, type ObjetivoResumen } from "@/components/dashboard/employee-objetivos-panel";
 import { EmployeeKpiPanel } from "@/components/dashboard/employee-kpi-panel";
 import { TareaFechaLimiteBadge } from "@/components/tasks/tarea-fecha-limite";
@@ -13,6 +16,13 @@ import { formatPercent } from "@/lib/utils";
 import { getTareaLimiteStatus } from "@/lib/task-utils";
 import type { PremioArt49 } from "@/lib/art49-types";
 import type { EmployeeTarea } from "@/components/tasks/employee-kanban";
+
+const ESTADO_LABEL: Record<string, string> = {
+  PENDIENTE: "Pendiente",
+  EN_PROCESO: "En proceso",
+  PENDIENTE_APROBACION: "En revisión",
+  COMPLETADA: "Completada",
+};
 
 interface KpiItem {
   kpiId: string;
@@ -58,6 +68,7 @@ interface EmployeeDashboardProps {
     deltaKpi: number;
     deltaPremio: number;
   } | null;
+  premioHabilitado?: boolean;
   onRefresh: () => void;
 }
 
@@ -71,6 +82,7 @@ export function EmployeeDashboard({
   tareas,
   objetivos = [],
   comparacion,
+  premioHabilitado = true,
   onRefresh,
 }: EmployeeDashboardProps) {
   const puntajePremio = productivityBonus?.puntajePremio ?? 0;
@@ -84,8 +96,27 @@ export function EmployeeDashboard({
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 animate-stagger">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="dash-eyebrow">Tu día</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">Mi tablero</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Prioridades, avance y premio en un solo lugar
+            {periodo ? ` · ${periodo.label}` : ""}
+          </p>
+        </div>
+        <Link href="/dashboard/tareas">
+          <Button size="sm" className="rounded-xl shadow-md shadow-primary/20">
+            <ClipboardList className="mr-2 h-4 w-4" />
+            Mis tareas
+          </Button>
+        </Link>
+      </div>
+
+      <div
+        className={`grid gap-4 sm:grid-cols-2 ${premioHabilitado ? "xl:grid-cols-4" : "xl:grid-cols-3"} animate-stagger`}
+      >
         <StatCard
           label="Tareas completadas"
           value={tareasPorEstado.completada}
@@ -104,73 +135,54 @@ export function EmployeeDashboard({
           )}
           variant="blue"
         />
-        <StatCard
-          label="Premio semestral"
-          value={`${puntajePremio}%`}
-          hint="Art. 49 — ver detalle abajo"
-          icon={Award}
-          variant="violet"
-        />
+        {premioHabilitado && (
+          <StatCard
+            label="Premio semestral"
+            value={`${puntajePremio}%`}
+            hint="Art. 49 — detalle abajo"
+            icon={Award}
+            variant="violet"
+          />
+        )}
       </div>
 
-      {comparacion && (
-        <div className="rounded-2xl border border-border/60 bg-white/50 p-4">
-          <h2 className="text-lg font-bold">Comparación con semestre anterior</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            {comparacion.periodo.label} vs período actual
-          </p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard
-              label="KPI promedio"
-              value={formatPercent(comparacion.kpiPromedio)}
-              hint={`${comparacion.deltaKpi >= 0 ? "+" : ""}${comparacion.deltaKpi} pp vs anterior`}
-              variant={comparacion.deltaKpi >= 0 ? "emerald" : "slate"}
-            />
-            <StatCard
-              label="Premio semestral"
-              value={`${comparacion.puntajePremio}%`}
-              hint={`${comparacion.deltaPremio >= 0 ? "+" : ""}${comparacion.deltaPremio} pp vs anterior`}
-              variant={comparacion.deltaPremio >= 0 ? "violet" : "slate"}
-            />
-            <StatCard
-              label="Eficiencia"
-              value={formatPercent(comparacion.eficiencia)}
-              hint="Período anterior"
-              variant="blue"
-            />
-          </div>
-        </div>
-      )}
-
-      <EmployeeObjetivosPanel objetivos={objetivos} />
-
-      <EmployeeKpiPanel kpiCompliance={kpiCompliance} onRefresh={onRefresh} />
-
-      <div className="rounded-2xl border border-border/60 bg-white/50 p-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="dash-panel p-5 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-bold">Tareas prioritarias</h2>
+            <h2 className="text-lg font-bold tracking-tight">Tareas prioritarias</h2>
             <p className="text-sm text-muted-foreground">
-              Vencidas, próximas a vencer o de alta prioridad
+              Vencidas, próximas o de alta prioridad
             </p>
           </div>
           <Link href="/dashboard/tareas">
             <Button variant="outline" size="sm" className="rounded-xl">
-              Ir a Mis tareas
+              Ir al tablero
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </div>
         {tareasUrgentes.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            No tenés tareas urgentes. Revisá tu tablero completo en Mis tareas.
-          </p>
+          <EmptyState
+            icon={CheckCircle2}
+            tone="success"
+            title="Sin urgencias por ahora"
+            description="Cuando haya vencidas o prioridad alta, van a aparecer acá."
+            className="py-8"
+            action={
+              <Link href="/dashboard/tareas">
+                <Button variant="outline" size="sm" className="rounded-xl">
+                  Ver todas las tareas
+                </Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="space-y-2">
             {tareasUrgentes.map((t) => (
-              <div
+              <Link
                 key={t.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm"
+                href="/dashboard/tareas"
+                className="group flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/80 px-3.5 py-3 text-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:ring-teal-200 hover:shadow-md"
               >
                 <div className="flex min-w-0 items-center gap-2">
                   {getTareaLimiteStatus(t.fechaLimite, t.estado).vencida && (
@@ -181,28 +193,75 @@ export function EmployeeDashboard({
                 <div className="flex items-center gap-2">
                   <TareaFechaLimiteBadge fechaLimite={t.fechaLimite} estado={t.estado} />
                   <Badge variant="secondary" className="text-[10px]">
-                    {t.estado.replace("_", " ")}
+                    {ESTADO_LABEL[t.estado] ?? t.estado.replace("_", " ")}
                   </Badge>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-60 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
       </div>
 
-      {productivityBonus?.premioTemplate === "kpi_simple" && !productivityBonus.art49 && (
-        <div className="rounded-2xl border border-violet-200/60 bg-violet-50/30 px-5 py-4">
-          <p className="font-semibold text-violet-900">Bono por KPI — {puntajePremio}%</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Calculado según cumplimiento KPI promedio del semestre.
+      <div className="grid gap-6 lg:grid-cols-2">
+        <EmployeeObjetivosPanel objetivos={objetivos} />
+        <EmployeeKpiPanel kpiCompliance={kpiCompliance} onRefresh={onRefresh} />
+      </div>
+
+      {comparacion && (
+        <div className="dash-panel p-5">
+          <h2 className="text-lg font-bold tracking-tight">Vs semestre anterior</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            {comparacion.periodo.label} comparado con el período actual
           </p>
+          <div
+            className={`grid gap-4 ${premioHabilitado ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+          >
+            <StatCard
+              label="KPI promedio"
+              value={formatPercent(comparacion.kpiPromedio)}
+              hint={`${comparacion.deltaKpi >= 0 ? "+" : ""}${comparacion.deltaKpi} pp`}
+              variant={comparacion.deltaKpi >= 0 ? "emerald" : "slate"}
+            />
+            {premioHabilitado && (
+              <StatCard
+                label="Premio semestral"
+                value={`${comparacion.puntajePremio}%`}
+                hint={`${comparacion.deltaPremio >= 0 ? "+" : ""}${comparacion.deltaPremio} pp`}
+                variant={comparacion.deltaPremio >= 0 ? "violet" : "slate"}
+              />
+            )}
+            <StatCard
+              label="Eficiencia"
+              value={formatPercent(comparacion.eficiencia)}
+              hint="Período anterior"
+              variant="blue"
+            />
+          </div>
         </div>
       )}
 
-      {productivityBonus?.art49 && (
-        <details className="rounded-2xl border border-violet-200/60 bg-violet-50/30 open:pb-2">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-semibold text-violet-900">
-            <span>Premio semestral Art. 49 ({puntajePremio}%)</span>
+      {premioHabilitado && <PremioExplainerPanel />}
+      <BenchmarkPanel />
+
+      {premioHabilitado &&
+        productivityBonus?.premioTemplate === "kpi_simple" &&
+        !productivityBonus.art49 && (
+          <div className="rounded-2xl border border-violet-200/60 bg-violet-50/40 px-5 py-4">
+            <p className="font-semibold text-violet-900">Bono por KPI — {puntajePremio}%</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Calculado según cumplimiento KPI promedio del semestre.
+            </p>
+          </div>
+        )}
+
+      {premioHabilitado && productivityBonus?.art49 && (
+        <details className="dash-panel open:pb-2">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-semibold text-slate-900">
+            <span className="flex items-center gap-2">
+              <Award className="h-4 w-4 text-violet-600" />
+              Premio semestral Art. 49 ({puntajePremio}%)
+            </span>
             {periodo && (
               <span className="text-xs font-normal text-muted-foreground">
                 Pago {periodo.mesPagoLabel}

@@ -235,9 +235,9 @@ export async function getResultadosCiclo(cicloId: string): Promise<ResultadoEval
   });
 }
 
-export async function getActiveCiclo() {
+export async function getActiveCiclo(organizationId: string) {
   return prisma.evaluacion360Ciclo.findFirst({
-    where: { activo: true, fechaFin: { gte: new Date() } },
+    where: { organizationId, activo: true, fechaFin: { gte: new Date() } },
     orderBy: { fechaInicio: "desc" },
   });
 }

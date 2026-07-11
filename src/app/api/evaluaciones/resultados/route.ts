@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { getResultadosCiclo } from "@/lib/evaluacion360";
 
@@ -11,6 +12,11 @@ export async function GET(request: NextRequest) {
   if (!cicloId) return apiError("cicloId requerido");
 
   try {
+    const ciclo = await prisma.evaluacion360Ciclo.findFirst({
+      where: { id: cicloId, organizationId: user.organizationId },
+    });
+    if (!ciclo) return apiError("Ciclo no encontrado", 404);
+
     let resultados = await getResultadosCiclo(cicloId);
 
     if (user.role === "GERENTE") {

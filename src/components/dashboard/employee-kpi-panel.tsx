@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Pencil } from "lucide-react";
+import { Loader2, Pencil, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatPercent } from "@/lib/utils";
 
 interface KpiItem {
@@ -28,7 +29,23 @@ export function EmployeeKpiPanel({ kpiCompliance, onRefresh }: EmployeeKpiPanelP
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  if (kpiCompliance.length === 0) return null;
+  if (kpiCompliance.length === 0) {
+    return (
+      <Card className="dash-panel border-0 shadow-none h-full">
+        <CardHeader>
+          <CardTitle className="text-base">Mis KPIs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={TrendingUp}
+            title="Todavía no tenés KPIs"
+            description="Cuando tu gerente defina objetivos, vas a poder registrar el avance acá."
+            className="py-6"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   async function saveKpi(kpiId: string) {
     const valor = Number(draft);
@@ -49,7 +66,14 @@ export function EmployeeKpiPanel({ kpiCompliance, onRefresh }: EmployeeKpiPanelP
         setError(data.error ?? "No se pudo guardar el avance.");
         return;
       }
-      setEditingId(null);
+      const data = await res.json().catch(() => ({}));
+      if (data.workflowPendiente) {
+        setError("");
+        setEditingId(null);
+        alert(data.message ?? "Solicitud enviada al gerente.");
+      } else {
+        setEditingId(null);
+      }
       onRefresh();
     } catch {
       setError("Error de conexión al guardar.");
@@ -59,11 +83,11 @@ export function EmployeeKpiPanel({ kpiCompliance, onRefresh }: EmployeeKpiPanelP
   }
 
   return (
-    <Card className="glass-card">
+    <Card className="dash-panel border-0 shadow-none h-full">
       <CardHeader>
         <CardTitle className="text-base">Mis KPIs</CardTitle>
         <p className="text-xs text-muted-foreground">
-          Registrá tu avance actual; el gerente define las metas.
+          Registrá tu avance actual; los cambios pueden requerir aprobación del gerente.
         </p>
       </CardHeader>
       <CardContent className="space-y-5">

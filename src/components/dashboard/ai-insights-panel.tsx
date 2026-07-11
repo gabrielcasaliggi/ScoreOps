@@ -82,6 +82,18 @@ export function AiInsightsPanel() {
           </div>
         )}
 
+        {scope === "equipo" && resumenSemanal && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4 animate-fade-in">
+            <div className="mb-2 flex items-center gap-2">
+              <p className="text-sm font-semibold text-blue-900">Resumen gerencial semanal</p>
+              <Badge variant="outline" className="text-[10px]">
+                {resumenOrigen === "ollama" ? "IA local" : "Automático"}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">{resumenSemanal}</p>
+          </div>
+        )}
+
         <div className="animate-stagger space-y-3">
         {insights.map((insight) => {
           const Icon = ICONS[insight.tipo];

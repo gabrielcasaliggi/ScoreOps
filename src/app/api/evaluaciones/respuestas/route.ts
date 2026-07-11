@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
 
     const { cicloId, evaluadoId, rol, respuestas } = parsed.data;
 
-    const ciclo = await prisma.evaluacion360Ciclo.findUnique({ where: { id: cicloId } });
+    const ciclo = await prisma.evaluacion360Ciclo.findFirst({
+      where: { id: cicloId, organizationId: user.organizationId },
+    });
     if (!ciclo || !ciclo.activo) {
       return apiError("Ciclo no activo o inexistente", 400);
     }
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const usuarios = await prisma.user.findMany({
-      where: { activo: true },
+      where: { activo: true, organizationId: user.organizationId },
       select: { id: true, nombre: true, apellido: true, role: true, areaId: true, activo: true },
     });
     const evaluador = usuarios.find((u) => u.id === user.id);

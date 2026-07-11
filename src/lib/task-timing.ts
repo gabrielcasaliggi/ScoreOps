@@ -40,6 +40,11 @@ export function buildStatusTransition(
     data.tiempoReal = null;
   }
 
+  if (newEstado === "PENDIENTE_APROBACION" && existing.estado === "EN_PROCESO") {
+    // Sin completedAt hasta que el gerente apruebe
+    return data;
+  }
+
   if (newEstado === "COMPLETADA" && existing.estado !== "COMPLETADA") {
     data.completedAt = now;
 

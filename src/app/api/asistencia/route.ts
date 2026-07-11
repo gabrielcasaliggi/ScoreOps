@@ -39,14 +39,15 @@ export async function GET(request: NextRequest) {
 
   const where: Prisma.AsistenciaRegistroWhereInput = {
     periodoId: period.id,
+    user: { organizationId: user.organizationId },
   };
 
   if (userId) where.userId = userId;
 
   if (user.role === "GERENTE") {
-    where.user = { areaId: user.areaId };
+    where.user = { organizationId: user.organizationId, areaId: user.areaId };
   } else if (areaId) {
-    where.user = { areaId };
+    where.user = { organizationId: user.organizationId, areaId };
   }
 
   const registros = await prisma.asistenciaRegistro.findMany({
@@ -82,8 +83,8 @@ export async function POST(request: NextRequest) {
     const tipo = parseAsistenciaTipo(parsed.data.tipo);
     if (!tipo) return apiError("Tipo de asistencia inválido");
 
-    const target = await prisma.user.findUnique({
-      where: { id: parsed.data.userId },
+    const target = await prisma.user.findFirst({
+      where: { id: parsed.data.userId, organizationId: user.organizationId },
       select: { id: true, areaId: true },
     });
     if (!target) return apiError("Usuario no encontrado", 404);
@@ -177,7 +178,11 @@ export async function PUT(request: NextRequest) {
 
     for (const row of parsedRows) {
       const empleado = await prisma.user.findFirst({
-        where: { legajo: row.legajo, activo: true },
+        where: {
+          legajo: row.legajo,
+          activo: true,
+          organizationId: user.organizationId,
+        },
         select: { id: true, areaId: true },
       });
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   Award,
@@ -37,14 +38,37 @@ interface NavItem {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
+  badgeKey?: "aprobaciones";
 }
 
 export function AppShell({ user, branding, isSuperAdmin = false, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [aprobacionesPendientes, setAprobacionesPendientes] = useState(0);
 
   const isManager = user.role === "ADMINISTRADOR" || user.role === "GERENTE";
   const isAdmin = user.role === "ADMINISTRADOR";
+  const premioOn = branding.premioHabilitado;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBadge() {
+      try {
+        const res = await fetch("/api/workflows?estado=PENDIENTE");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setAprobacionesPendientes(data.pendientes ?? 0);
+      } catch {
+        /* ignore */
+      }
+    }
+    loadBadge();
+    const timer = setInterval(loadBadge, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
 
   const primaryNav: NavItem[] = isManager
     ? [
@@ -56,11 +80,28 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
           label: isAdmin ? "Equipos" : "Mi equipo",
           icon: Users,
         },
-        { href: "/dashboard/premio", label: "Premio", icon: Award },
+        ...(premioOn
+          ? [{ href: "/dashboard/premio", label: "Premio", icon: Award }]
+          : []),
+        {
+          href: "/dashboard/aprobaciones",
+          label: isManager ? "Aprobaciones" : "Mis solicitudes",
+          icon: ClipboardCheck,
+          badgeKey: "aprobaciones" as const,
+        },
+        ...(isAdmin
+          ? [{ href: "/dashboard/ejecutivo", label: "Ejecutivo", icon: BarChart3 }]
+          : []),
       ]
     : [
         { href: "/dashboard", label: "Mi tablero", icon: LayoutDashboard },
         { href: "/dashboard/tareas", label: "Mis tareas", icon: ClipboardList },
+        {
+          href: "/dashboard/aprobaciones",
+          label: "Mis solicitudes",
+          icon: ClipboardCheck,
+          badgeKey: "aprobaciones" as const,
+        },
       ];
 
   const moreNavEmployee: NavItem[] = [
@@ -70,9 +111,6 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   const moreNav: NavItem[] = isManager
     ? [
-        ...(isAdmin
-          ? [{ href: "/dashboard/ejecutivo", label: "Ejecutivo", icon: BarChart3 }]
-          : []),
         ...(isAdmin && isSuperAdmin
           ? [{ href: "/dashboard/superadmin", label: "Vertia", icon: Shield }]
           : []),
@@ -81,7 +119,9 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
         ...(isAdmin
           ? [
               { href: "/dashboard/empleados", label: "Empleados", icon: Users },
-              { href: "/dashboard/auditoria", label: "Auditoría", icon: ClipboardCheck },
+              ...(premioOn
+                ? [{ href: "/dashboard/auditoria", label: "Auditoría", icon: ClipboardCheck }]
+                : []),
             ]
           : []),
       ]
@@ -98,11 +138,31 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   function navLinkClass(active: boolean, compact = false) {
     return cn(
-      "flex items-center gap-2 rounded-xl font-medium transition-all duration-200 shrink-0",
+      "relative flex items-center gap-2 rounded-xl font-medium transition-all duration-200 shrink-0",
       compact ? "px-3 py-2 text-sm" : "px-3.5 py-2 text-sm",
       active
         ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
         : "text-muted-foreground hover:bg-white/80 hover:text-foreground"
+    );
+  }
+
+  function badgeFor(item: NavItem) {
+    if (item.badgeKey === "aprobaciones" && aprobacionesPendientes > 0) {
+      return aprobacionesPendientes > 9 ? "9+" : String(aprobacionesPendientes);
+    }
+    return null;
+  }
+
+  function NavBadge({ value, active }: { value: string; active: boolean }) {
+    return (
+      <span
+        className={cn(
+          "ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+          active ? "bg-white text-primary" : "bg-destructive text-white"
+        )}
+      >
+        {value}
+      </span>
     );
   }
 
@@ -124,55 +184,64 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
             {primaryNav.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href;
+              const badge = badgeFor(item);
               return (
-                <Link key={item.href} href={item.href} className={cn(navLinkClass(active, true), "group")}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(navLinkClass(active, true), "group")}
+                  title={item.label}
+                >
                   <Icon className={cn("h-4 w-4 shrink-0 icon-hover-pop", active && "nav-icon-active")} />
                   <span className="hidden whitespace-nowrap lg:inline">{item.label}</span>
+                  {badge && <NavBadge value={badge} active={active} />}
                 </Link>
               );
             })}
 
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button
-                  type="button"
-                  className={navLinkClass(moreNavActive, true)}
-                  aria-label="Más secciones"
-                >
-                  <MoreHorizontal className="h-4 w-4 shrink-0" />
-                  <span className="hidden whitespace-nowrap lg:inline">Más</span>
-                  <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  className="z-50 min-w-[11rem] rounded-xl border bg-white p-1.5 shadow-lg"
-                  sideOffset={6}
-                  align="end"
-                >
-                  {moreNav.map((item) => {
-                    const Icon = item.icon;
-                    const active = pathname === item.href;
-                    return (
-                      <DropdownMenu.Item key={item.href} asChild>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none",
-                            active
-                              ? "bg-primary/10 font-medium text-primary"
-                              : "text-foreground hover:bg-muted"
-                          )}
-                        >
-                          <Icon className="h-4 w-4" />
-                          {item.label}
-                        </Link>
-                      </DropdownMenu.Item>
-                    );
-                  })}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+            {moreNav.length > 0 && (
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button
+                    type="button"
+                    className={navLinkClass(moreNavActive, true)}
+                    aria-label="Más secciones"
+                  >
+                    <MoreHorizontal className="h-4 w-4 shrink-0" />
+                    <span className="hidden whitespace-nowrap lg:inline">Más</span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    className="z-50 min-w-[11rem] rounded-xl border bg-white p-1.5 shadow-lg"
+                    sideOffset={6}
+                    align="end"
+                  >
+                    {moreNav.map((item) => {
+                      const Icon = item.icon;
+                      const active = pathname === item.href;
+                      return (
+                        <DropdownMenu.Item key={item.href} asChild>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none",
+                              active
+                                ? "bg-primary/10 font-medium text-primary"
+                                : "text-foreground hover:bg-muted"
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        </DropdownMenu.Item>
+                      );
+                    })}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            )}
           </nav>
 
           <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
@@ -216,16 +285,24 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
           {allNav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
+            const badge = badgeFor(item);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex min-w-[4.5rem] shrink-0 flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-[10px] font-medium transition-colors",
+                  "relative flex min-w-[4.5rem] shrink-0 flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-[10px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                <Icon className={cn("h-5 w-5", active && "text-primary")} />
+                <span className="relative">
+                  <Icon className={cn("h-5 w-5", active && "text-primary")} />
+                  {badge && (
+                    <span className="absolute -right-2 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-white">
+                      {badge}
+                    </span>
+                  )}
+                </span>
                 <span className="max-w-full truncate px-1">{item.label}</span>
               </Link>
             );
