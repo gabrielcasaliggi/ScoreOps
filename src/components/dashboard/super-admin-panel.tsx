@@ -79,7 +79,7 @@ export function SuperAdminPanel() {
       return;
     }
 
-    setMessage(data.loginHint ?? "Organización creada.");
+    setMessage(data.loginHint ?? "Empresa creada.");
     setShowForm(false);
     setForm({
       slug: "",
@@ -129,7 +129,7 @@ export function SuperAdminPanel() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Super-admin Vertia</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Alta y gestión de cooperativas en la plataforma
+            Alta y gestión de empresas en la plataforma
           </p>
         </div>
         <div className="flex gap-2">
@@ -139,7 +139,7 @@ export function SuperAdminPanel() {
           </Button>
           <Button size="sm" onClick={() => setShowForm(!showForm)}>
             <Plus className="mr-2 h-4 w-4" />
-            Nueva cooperativa
+            Nueva empresa
           </Button>
         </div>
       </div>
@@ -150,9 +150,9 @@ export function SuperAdminPanel() {
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Nueva organización</CardTitle>
+            <CardTitle>Nueva empresa</CardTitle>
             <CardDescription>
-              Se crea la org, un área inicial y el usuario administrador
+              Se crea la organización, un área inicial y el usuario administrador
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -164,13 +164,13 @@ export function SuperAdminPanel() {
                   onChange={(e) =>
                     setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s/g, "-") })
                   }
-                  placeholder="coop-norte"
+                  placeholder="empresa-norte"
                   pattern="[a-z0-9-]+"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Nombre cooperativa</Label>
+                <Label>Nombre de la empresa</Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -232,13 +232,13 @@ export function SuperAdminPanel() {
                   <span className="font-medium block">Premio a la productividad</span>
                   <span className="text-muted-foreground text-xs">
                     Si está desactivado, no aparece el menú Premio ni cálculos Art. 49 / bono
-                    KPI en ninguna pantalla de esta cooperativa.
+                    KPI en ninguna pantalla de esta empresa.
                   </span>
                 </span>
               </label>
               <div className="sm:col-span-2">
                 <Button type="submit" disabled={creating}>
-                  {creating ? "Creando..." : "Crear organización"}
+                  {creating ? "Creando..." : "Crear empresa"}
                 </Button>
               </div>
             </form>
@@ -250,7 +250,7 @@ export function SuperAdminPanel() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Building2 className="h-5 w-5" />
-            Organizaciones ({orgs.length})
+            Empresas ({orgs.length})
           </CardTitle>
         </CardHeader>
         <CardContent>

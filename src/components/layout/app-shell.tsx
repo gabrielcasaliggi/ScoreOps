@@ -260,7 +260,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                     ? "bg-slate-900 text-white shadow-slate-900/25"
                     : "bg-teal-600 text-white hover:bg-teal-700 hover:shadow-md"
                 )}
-                title="Gestionar cooperativas"
+                title="Gestionar empresas"
               >
                 <Shield className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                 <span>Empresas</span>

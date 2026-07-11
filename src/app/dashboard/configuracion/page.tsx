@@ -292,7 +292,7 @@ export default function ConfiguracionPage() {
               <div>
                 <p className="font-semibold text-slate-900">Gestión multi-empresa</p>
                 <p className="text-sm text-muted-foreground">
-                  Creá cooperativas y administrá tenants desde Empresas.
+                  Creá empresas y administrá tenants desde Empresas.
                 </p>
               </div>
             </div>
