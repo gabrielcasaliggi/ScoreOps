@@ -159,11 +159,7 @@ export function buildExecutivePdfReport(report: import("./executive-stats").Exec
   doc.setTextColor(80);
   doc.text(report.organizationName, 14, 28);
   doc.setFontSize(9);
-  doc.text(
-    `${report.periodo.label} · ${fecha} · ${BRAND.exportFooter}`,
-    14,
-    34
-  );
+  doc.text(`${report.periodo.label} · ${fecha} · ${BRAND.exportFooter}`, 14, 34);
 
   doc.setTextColor(0);
   doc.setFontSize(12);
@@ -171,40 +167,94 @@ export function buildExecutivePdfReport(report: import("./executive-stats").Exec
   doc.setFontSize(10);
 
   const r = report.resumen;
+  const p = report.pipeline;
+  const q = report.calidadTareas;
   const lines = [
     `Empleados activos: ${r.empleadosActivos} · Áreas: ${r.areas}`,
-    `KPI promedio: ${r.kpiPromedioOrg}% · Premio promedio: ${r.premioPromedioOrg}%`,
-    `Tareas abiertas: ${r.tareasAbiertas} · Vencidas: ${r.tareasVencidas}`,
+    `KPI promedio: ${r.kpiPromedioOrg}% · Eficiencia: ${r.eficienciaPromedioOrg}% · Premio: ${r.premioPromedioOrg}%`,
+    `Pipeline: ${p.pendientes} pend. · ${p.enProceso} en proceso · ${p.enAprobacion} en revisión · ${p.completadas} hechas`,
+    `Abiertas: ${p.abiertas} · Vencidas: ${p.vencidas} · Alta prioridad: ${p.altaPrioridadAbiertas}`,
+    `Puntualidad: ${q.puntualidadPct}% · Eficiencia temporal: ${q.eficienciaTemporalPct}%`,
     `Objetivos activos: ${r.objetivosActivos} · En riesgo: ${r.objetivosEnRiesgo}`,
     `Plantilla premio: ${report.plantillaPremio.nombre}`,
   ];
   lines.forEach((line, i) => doc.text(line, 14, 54 + i * 6));
 
-  let y = 54 + lines.length * 6 + 6;
+  let y = 54 + lines.length * 6 + 8;
 
   if (report.porArea.length > 0) {
     doc.setFontSize(12);
-    doc.text("Por área", 14, y);
+    doc.text("Equipos / áreas", 14, y);
     y += 4;
     autoTable(doc, {
       startY: y,
-      head: [["Área", "Emp.", "KPI %", "Premio %", "Tareas", "Vencidas"]],
+      head: [
+        [
+          "Área",
+          "Emp.",
+          "KPI",
+          "Efic.",
+          "Abiertas",
+          "Venc.",
+          "Hechas",
+          "Puntual.",
+        ],
+      ],
       body: report.porArea.map((a) => [
         a.nombre,
         String(a.empleados),
         `${a.kpiPromedio}%`,
-        `${a.premioPromedio}%`,
+        `${a.eficienciaPromedio}%`,
         String(a.tareasAbiertas),
         String(a.tareasVencidas),
+        String(a.tareasCompletadas),
+        `${a.puntualidadPct}%`,
       ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [91, 74, 224] },
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [15, 118, 110] },
     });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
   }
 
-  const dc = report.distribucionCarga;
   if (y > 250) {
+    doc.addPage();
+    y = 20;
+  }
+
+  doc.setFontSize(12);
+  doc.text("Personas", 14, y);
+  y += 4;
+  autoTable(doc, {
+    startY: y,
+    head: [
+      [
+        "Empleado",
+        "Área",
+        "KPI",
+        "Abiertas",
+        "Venc.",
+        "Hechas",
+        "Puntual.",
+        "Alerta",
+      ],
+    ],
+    body: report.porPersona.map((p) => [
+      `${p.nombre} ${p.apellido}`,
+      p.area,
+      `${p.kpiPromedio}%`,
+      String(p.tareasAbiertas),
+      String(p.tareasVencidas),
+      String(p.tareasCompletadas),
+      `${p.puntualidadPct}%`,
+      p.alerta ?? "—",
+    ]),
+    styles: { fontSize: 7 },
+    headStyles: { fillColor: [37, 99, 235] },
+  });
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+
+  const dc = report.distribucionCarga;
+  if (y > 240) {
     doc.addPage();
     y = 20;
   }
@@ -220,10 +270,10 @@ export function buildExecutivePdfReport(report: import("./executive-stats").Exec
     autoTable(doc, {
       startY: y,
       head: [["Sobrecargados", "Área", "Tareas abiertas"]],
-      body: dc.sobrecargados.map((p) => [
-        `${p.nombre} ${p.apellido}`,
-        p.area,
-        String(p.tareasAbiertas),
+      body: dc.sobrecargados.map((person) => [
+        `${person.nombre} ${person.apellido}`,
+        person.area,
+        String(person.tareasAbiertas),
       ]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [217, 119, 6] },
@@ -239,10 +289,10 @@ export function buildExecutivePdfReport(report: import("./executive-stats").Exec
     autoTable(doc, {
       startY: y,
       head: [["Con capacidad", "Área", "Tareas abiertas"]],
-      body: dc.conCapacidad.map((p) => [
-        `${p.nombre} ${p.apellido}`,
-        p.area,
-        String(p.tareasAbiertas),
+      body: dc.conCapacidad.map((person) => [
+        `${person.nombre} ${person.apellido}`,
+        person.area,
+        String(person.tareasAbiertas),
       ]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [5, 150, 105] },
