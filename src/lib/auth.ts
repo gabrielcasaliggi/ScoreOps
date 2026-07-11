@@ -105,16 +105,27 @@ function isSessionCookieSecure(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
-export async function createSession(user: SessionUser): Promise<void> {
-  const token = createSessionToken(user.id);
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
+export function getSessionCookieOptions() {
+  return {
     httpOnly: true,
     secure: isSessionCookieSecure(),
-    sameSite: "lax",
+    sameSite: "lax" as const,
     maxAge: SESSION_MAX_AGE,
     path: "/",
-  });
+  };
+}
+
+export function createSessionCookieValue(userId: string): string {
+  return createSessionToken(userId);
+}
+
+export function getSessionCookieName(): string {
+  return SESSION_COOKIE;
+}
+
+export async function createSession(user: SessionUser): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, createSessionCookieValue(user.id), getSessionCookieOptions());
 }
 
 export async function destroySession(): Promise<void> {

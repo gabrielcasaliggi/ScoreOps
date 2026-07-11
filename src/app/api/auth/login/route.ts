@@ -1,9 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createSession, toSessionUser } from "@/lib/auth";
-import { apiError, apiSuccess } from "@/lib/api";
+import {
+  createSessionCookieValue,
+  getSessionCookieName,
+  getSessionCookieOptions,
+  toSessionUser,
+} from "@/lib/auth";
+import { apiError } from "@/lib/api";
 import {
   getLockoutMessage,
   getRemainingLockoutMinutes,
@@ -77,12 +82,21 @@ export async function POST(request: NextRequest) {
     await recordLoginAttempt(parsed.data.email, true, ip);
 
     const sessionUser = toSessionUser(user);
-    await createSession(sessionUser);
+    const response = NextResponse.json({ user: sessionUser });
+    response.cookies.set(
+      getSessionCookieName(),
+      createSessionCookieValue(sessionUser.id),
+      getSessionCookieOptions()
+    );
 
     console.log(`[Auth] Login exitoso: ${user.email}`);
-    return apiSuccess({ user: sessionUser });
+    return response;
   } catch (error) {
     console.error("[Auth] Error en login:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("SESSION_SECRET")) {
+      return apiError("Configuración de sesión incompleta en el servidor", 500);
+    }
     return apiError("Error interno del servidor", 500);
   }
 }
