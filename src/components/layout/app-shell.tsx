@@ -73,6 +73,9 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
   const primaryNav: NavItem[] = isManager
     ? [
         { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
+        ...(isAdmin && isSuperAdmin
+          ? [{ href: "/dashboard/superadmin", label: "Empresas", icon: Shield }]
+          : []),
         { href: "/dashboard/tareas", label: "Tareas", icon: ClipboardList },
         { href: "/dashboard/objetivos", label: "Objetivos", icon: Target },
         {
@@ -111,9 +114,6 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   const moreNav: NavItem[] = isManager
     ? [
-        ...(isAdmin && isSuperAdmin
-          ? [{ href: "/dashboard/superadmin", label: "Vertia", icon: Shield }]
-          : []),
         { href: "/dashboard/asistencia", label: "Asistencia", icon: CalendarClock },
         { href: "/dashboard/evaluaciones", label: "Evaluaciones", icon: Star },
         ...(isAdmin

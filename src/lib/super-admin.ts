@@ -1,12 +1,16 @@
 import type { SessionUser } from "./auth";
 
+const DEFAULT_SUPER_ADMIN_EMAILS = "soporte@vertia.local";
+
 /**
  * Super-admins de Vertia (operación multi-cliente).
- * Configurar en .env: VERTIA_SUPER_ADMIN_EMAILS=admin@vertia.local,ops@vertia.com
+ * Configurar en .env: VERTIA_SUPER_ADMIN_EMAILS=soporte@vertia.local,ops@vertia.com
+ * Si la variable no está definida, usa soporte@vertia.local por defecto.
  */
 export function isVertiaSuperAdmin(email: string): boolean {
-  const raw = process.env.VERTIA_SUPER_ADMIN_EMAILS ?? "";
-  if (!raw.trim()) return false;
+  const raw = process.env.VERTIA_SUPER_ADMIN_EMAILS?.trim()
+    ? process.env.VERTIA_SUPER_ADMIN_EMAILS
+    : DEFAULT_SUPER_ADMIN_EMAILS;
 
   const allowed = raw
     .split(",")

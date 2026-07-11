@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Building2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,6 +56,7 @@ export default function ConfiguracionPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [resetUserId, setResetUserId] = useState("");
   const [resetPassword, setResetPassword] = useState("");
@@ -79,6 +82,7 @@ export default function ConfiguracionPage() {
       .then((r) => r.json())
       .then((data) => {
         setRole(data.user?.role ?? null);
+        setIsSuperAdmin(Boolean(data.user?.isSuperAdmin));
         setPremioHabilitado(data.user?.premioHabilitado !== false);
         if (data.user?.role === "ADMINISTRADOR" || data.user?.role === "GERENTE") {
           fetch("/api/usuarios")
