@@ -282,6 +282,30 @@ export default function ConfiguracionPage() {
     <div className="max-w-lg space-y-6">
       <h1 className="text-2xl font-bold">Configuración</h1>
 
+      {isSuperAdmin && (
+        <Card className="border-teal-200/70 bg-gradient-to-r from-teal-50/90 to-indigo-50/40">
+          <CardContent className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-800">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">Gestión multi-empresa</p>
+                <p className="text-sm text-muted-foreground">
+                  Creá cooperativas y administrá tenants desde Empresas.
+                </p>
+              </div>
+            </div>
+            <Link href="/dashboard/superadmin">
+              <Button className="rounded-xl w-full sm:w-auto">
+                Ir a Empresas
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {isAdmin && <OnboardingChecklist />}
 
       <Card>
