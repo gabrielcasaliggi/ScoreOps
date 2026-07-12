@@ -46,9 +46,13 @@ export async function POST(request: NextRequest) {
       const record = rowToRecord(headers, rows[i]);
 
       try {
-        const areaId = areaByName.get(record.area.toLowerCase());
+        const areaId = areaByName.get(record.area.toLowerCase().trim());
         if (!areaId) {
-          errores.push({ fila, motivo: `Área desconocida: ${record.area}` });
+          const validas = areas.map((a) => a.nombre).join(", ") || "(ninguna)";
+          errores.push({
+            fila,
+            motivo: `Área desconocida: "${record.area}". Áreas válidas: ${validas}`,
+          });
           continue;
         }
 

@@ -66,6 +66,7 @@ export default function EmpleadosPage() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [q, setQ] = useState("");
   const [activoFilter, setActivoFilter] = useState<"true" | "false" | "all">("true");
+  const [areaFilter, setAreaFilter] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState<Usuario | null>(null);
@@ -89,6 +90,7 @@ export default function EmpleadosPage() {
   const load = useCallback(async () => {
     const params = new URLSearchParams({ activo: activoFilter });
     if (q) params.set("q", q);
+    if (areaFilter !== "all") params.set("areaId", areaFilter);
     const [usrRes, areaRes] = await Promise.all([
       fetch(`/api/usuarios?${params}`),
       fetch("/api/areas"),
@@ -97,7 +99,7 @@ export default function EmpleadosPage() {
     const areasData = await areaRes.json();
     setAreas(Array.isArray(areasData) ? areasData : []);
     setLoading(false);
-  }, [activoFilter, q]);
+  }, [activoFilter, areaFilter, q]);
 
   useEffect(() => {
     if (authorized) load();
@@ -264,6 +266,18 @@ export default function EmpleadosPage() {
             <option value="true">Activos</option>
             <option value="false">Inactivos</option>
             <option value="all">Todos</option>
+          </select>
+          <select
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={areaFilter}
+            onChange={(e) => setAreaFilter(e.target.value)}
+          >
+            <option value="all">Todas las áreas</option>
+            {areas.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.nombre}
+              </option>
+            ))}
           </select>
         </CardContent>
       </Card>

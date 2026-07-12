@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import {
   AlertTriangle,
+  Check,
   Circle,
   CircleDot,
   GripVertical,
@@ -10,7 +11,9 @@ import {
   Plus,
   Sparkles,
   User,
+  X,
 } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +43,7 @@ interface Tarea {
   fechaLimite?: string | null;
   evaluaProductividad: boolean;
   pesoProductividad: number;
+  workflowId?: string | null;
   user: { id: string; nombre: string; apellido: string };
   objetivo?: { id: string; titulo: string } | null;
 }
@@ -90,7 +94,7 @@ const COLUMNS: {
     label: "Por aprobar",
     accent: "border-t-amber-500",
     icon: Sparkles,
-    hint: "Revisión gerente",
+    hint: "Decidí acá o en Aprobaciones",
   },
   {
     key: "COMPLETADA",
@@ -130,10 +134,14 @@ export function ManagerKanban({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [rejectTarea, setRejectTarea] = useState<Tarea | null>(null);
+  const [rejectComment, setRejectComment] = useState("");
 
   const filtered = filtroEmpleado
     ? tareas.filter((t) => t.user.id === filtroEmpleado)
     : tareas;
+
+  const porAprobar = filtered.filter((t) => t.estado === "PENDIENTE_APROBACION").length;
 
   const objetivosDelEmpleado = form.userId
     ? objetivos.filter((o) => o.userId === form.userId)
@@ -148,6 +156,33 @@ export function ManagerKanban({
     });
     setLoadingId(null);
     onRefresh();
+  }
+
+  async function resolverWorkflow(
+    tarea: Tarea,
+    accion: "aprobar" | "rechazar",
+    comentario?: string
+  ) {
+    if (!tarea.workflowId) {
+      // Fallback: mover estado (API cierra el workflow pendiente)
+      await updateEstado(
+        tarea.id,
+        accion === "aprobar" ? "COMPLETADA" : "EN_PROCESO"
+      );
+      return;
+    }
+    setLoadingId(tarea.id);
+    const res = await fetch(`/api/workflows/${tarea.workflowId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion, comentario: comentario || undefined }),
+    });
+    setLoadingId(null);
+    if (res.ok) {
+      setRejectTarea(null);
+      setRejectComment("");
+      onRefresh();
+    }
   }
 
   async function handleDrop(targetEstado: TaskStatus, tareaId: string) {
@@ -194,6 +229,17 @@ export function ManagerKanban({
           </p>
         </div>
       )}
+      {porAprobar > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300/60 bg-amber-50/60 px-4 py-3 text-sm">
+          <p>
+            <strong>{porAprobar}</strong> tarea(s) esperando tu decisión en{" "}
+            <em>Por aprobar</em>
+          </p>
+          <Button asChild variant="outline" size="sm" className="rounded-lg">
+            <Link href="/dashboard/aprobaciones">Ver cola de aprobaciones</Link>
+          </Button>
+        </div>
+      )}
       <div className="glass-card flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4">
         <div>
           {areaNombre && (
@@ -203,8 +249,8 @@ export function ManagerKanban({
             </p>
           )}
           <p className="text-xs text-muted-foreground mt-1 max-w-md">
-            Arrastrá tarjetas entre columnas. Asigná fecha límite para detectar atrasos. Las
-            tareas marcadas con Premio impactan el cálculo semestral.
+            Arrastrá tarjetas entre columnas. En <em>Por aprobar</em> usá Aprobar /
+            Devolver (o arrastrá a Completada / En proceso).
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -340,6 +386,36 @@ export function ManagerKanban({
                           {tarea.tiempoReal != null &&
                             ` → ${formatMinutes(tarea.tiempoReal)}`}
                         </p>
+                        {tarea.estado === "PENDIENTE_APROBACION" && (
+                          <div className="flex gap-1.5 pt-1">
+                            <Button
+                              size="sm"
+                              className="h-7 rounded-lg text-xs px-2"
+                              disabled={loadingId === tarea.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void resolverWorkflow(tarea, "aprobar");
+                              }}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Aprobar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 rounded-lg text-xs px-2"
+                              disabled={loadingId === tarea.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRejectComment("");
+                                setRejectTarea(tarea);
+                              }}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Devolver
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       {loadingId === tarea.id && (
                         <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
@@ -461,6 +537,52 @@ export function ManagerKanban({
               disabled={!form.titulo || !form.userId}
             >
               Crear y asignar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!rejectTarea}
+        onOpenChange={(open) => {
+          if (!open) setRejectTarea(null);
+        }}
+      >
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Devolver tarea</DialogTitle>
+            <DialogDescription>
+              Vuelve a En proceso. El empleado puede corregir y reenviar a revisión.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="kanban-reject">Motivo (opcional)</Label>
+            <Input
+              id="kanban-reject"
+              className="rounded-xl"
+              placeholder="Ej: Falta adjunto / revisar calidad"
+              value={rejectComment}
+              onChange={(e) => setRejectComment(e.target.value)}
+              maxLength={500}
+            />
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button variant="outline" onClick={() => setRejectTarea(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!rejectTarea || loadingId === rejectTarea.id}
+              onClick={() =>
+                rejectTarea &&
+                void resolverWorkflow(rejectTarea, "rechazar", rejectComment.trim())
+              }
+            >
+              {loadingId === rejectTarea?.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Confirmar devolución"
+              )}
             </Button>
           </div>
         </DialogContent>

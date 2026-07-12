@@ -114,7 +114,16 @@ export async function createKpiAdjustmentWorkflow(input: {
       estado: "PENDIENTE",
     },
   });
-  if (existing) return existing;
+  if (existing) {
+    return prisma.workflowRequest.update({
+      where: { id: existing.id },
+      data: {
+        valorAnterior: input.valorAnterior,
+        valorPropuesto: input.valorPropuesto,
+        comentarioSolicitud: input.comentario,
+      },
+    });
+  }
 
   const workflow = await prisma.workflowRequest.create({
     data: {
@@ -269,4 +278,71 @@ export async function cancelWorkflow(
     where: { id: workflowId },
     data: { estado: "CANCELADA", resolvedAt: new Date() },
   });
+}
+
+/**
+ * Cierra un WorkflowRequest de tarea pendiente cuando el gerente/admin
+ * ya cambió el estado de la tarea (p. ej. drag en kanban).
+ * No vuelve a tocar la tarea: solo alinea la solicitud y notifica.
+ */
+export async function closePendingTaskCompletionWorkflow(input: {
+  tareaId: string;
+  organizationId: string;
+  resolutorId: string;
+  resolutorRole: Role;
+  resolutorAreaId: string | null;
+  accion: "aprobar" | "rechazar";
+  comentario?: string;
+}): Promise<{ closed: boolean; error?: string }> {
+  const workflow = await prisma.workflowRequest.findFirst({
+    where: {
+      tareaId: input.tareaId,
+      organizationId: input.organizationId,
+      tipo: "TAREA_COMPLETADA",
+      estado: "PENDIENTE",
+    },
+    include: {
+      solicitante: { select: { id: true, areaId: true } },
+    },
+  });
+
+  if (!workflow) return { closed: false };
+
+  if (
+    !canResolveWorkflow(
+      input.resolutorRole,
+      input.resolutorAreaId,
+      workflow.solicitante.areaId
+    )
+  ) {
+    return { closed: false, error: "Sin permisos para resolver esta solicitud" };
+  }
+
+  const nuevoEstado: WorkflowStatus =
+    input.accion === "aprobar" ? "APROBADA" : "RECHAZADA";
+
+  await prisma.workflowRequest.update({
+    where: { id: workflow.id },
+    data: {
+      estado: nuevoEstado,
+      resolutorId: input.resolutorId,
+      comentarioResolucion: input.comentario,
+      resolvedAt: new Date(),
+    },
+  });
+
+  const aprobada = input.accion === "aprobar";
+  await notifyWorkflowResolved({
+    userId: workflow.solicitanteId,
+    titulo: aprobada ? "Solicitud aprobada" : "Solicitud rechazada",
+    mensaje: aprobada
+      ? "Tu solicitud de completar tarea fue aprobada."
+      : `Tu solicitud de completar tarea fue rechazada${
+          input.comentario ? `: ${input.comentario}` : "."
+        }`,
+    workflowId: workflow.id,
+    aprobada,
+  });
+
+  return { closed: true };
 }

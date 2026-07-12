@@ -17,21 +17,30 @@ export async function GET() {
   try {
     const organizationId = orgId(user);
 
-    const [areas, empleados, objetivos, tareas, org] = await Promise.all([
-      prisma.area.count({ where: { organizationId } }),
-      prisma.user.count({
-        where: { organizationId, role: "EMPLEADO", activo: true },
-      }),
-      prisma.objetivo.count({
-        where: { user: { organizationId } },
-      }),
-      prisma.tarea.count({
-        where: { user: { organizationId } },
-      }),
-      prisma.organization.findUnique({ where: { id: organizationId } }),
-    ]);
+    const [areas, empleados, objetivos, tareas, org, premioTemplateCfg] =
+      await Promise.all([
+        prisma.area.count({ where: { organizationId } }),
+        prisma.user.count({
+          where: { organizationId, role: "EMPLEADO", activo: true },
+        }),
+        prisma.objetivo.count({
+          where: { user: { organizationId } },
+        }),
+        prisma.tarea.count({
+          where: { user: { organizationId } },
+        }),
+        prisma.organization.findUnique({ where: { id: organizationId } }),
+        prisma.systemConfig.findFirst({
+          where: { organizationId, clave: "premio.template" },
+        }),
+      ]);
 
-    const brandingListo = Boolean(org?.logoUrl || org?.primaryColor);
+    const brandingListo = Boolean(
+      org?.logoUrl || (org?.primaryColor && org.primaryColor !== "#2563eb")
+    );
+    // Seed no setea updatedById; al guardar plantilla desde Config sí.
+    const premioRevisado =
+      org?.premioHabilitado === false || Boolean(premioTemplateCfg?.updatedById);
 
     const pasos: OnboardingStep[] = [
       {
@@ -71,9 +80,9 @@ export async function GET() {
       },
       {
         id: "premio",
-        titulo: "Elegir plantilla de premio",
-        descripcion: "Motor de reglas según tu reglamento.",
-        completado: true,
+        titulo: "Revisar plantilla de premio",
+        descripcion: "Confirmá el motor de reglas según tu reglamento.",
+        completado: premioRevisado,
         href: "/dashboard/configuracion",
       },
     ];

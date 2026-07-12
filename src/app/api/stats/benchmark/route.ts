@@ -28,15 +28,26 @@ export async function GET() {
     if (user.role === "ADMINISTRADOR" || user.role === "GERENTE") {
       const { orgPromedios, areas } = computeAreaBenchmark(orgStats);
 
-      const areasFiltered =
-        user.role === "GERENTE" && user.areaNombre
+      if (user.role === "GERENTE") {
+        const areasFiltered = user.areaNombre
           ? areas.filter((a) => a.area === user.areaNombre)
-          : areas;
+          : [];
+        const miArea = areasFiltered[0];
+        return apiSuccess({
+          scope: "area",
+          // Gerente: solo promedios de su área (no filtrar org completa)
+          orgPromedios: miArea
+            ? { kpi: miArea.kpiPromedio, premio: miArea.premioPromedio, eficiencia: miArea.eficienciaPromedio }
+            : null,
+          areas: areasFiltered,
+          periodo: periodoToApiPayload(period),
+        });
+      }
 
       return apiSuccess({
-        scope: user.role === "GERENTE" ? "area" : "org",
+        scope: "org",
         orgPromedios,
-        areas: areasFiltered,
+        areas,
         periodo: periodoToApiPayload(period),
       });
     }

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
+import { findUserInOrg } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   const { error, user } = await requireAuth(["ADMINISTRADOR", "GERENTE"]);
@@ -10,8 +11,23 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get("userId");
   const periodoId = searchParams.get("periodoId");
 
+  if (userId) {
+    const target = await findUserInOrg(user.organizationId, userId);
+    if (!target) return apiError("Usuario no encontrado", 404);
+    if (user.role === "GERENTE" && target.areaId !== user.areaId) {
+      return apiError("Sin permisos", 403);
+    }
+  }
+
+  const userFilter: Record<string, unknown> = {
+    organizationId: user.organizationId,
+  };
+  if (user.role === "GERENTE") {
+    userFilter.areaId = user.areaId;
+  }
+
   const where: Record<string, unknown> = {
-    user: { organizationId: user.organizationId },
+    user: userFilter,
   };
   if (userId) where.userId = userId;
   if (periodoId) where.periodoId = periodoId;

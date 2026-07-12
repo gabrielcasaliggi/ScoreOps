@@ -5,7 +5,10 @@ import { buildStatusTransition } from "@/lib/task-timing";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { assertObjetivoOwnership } from "../objetivo-ownership";
 import { getWorkflowConfig } from "@/lib/workflow-config";
-import { createTaskCompletionWorkflow } from "@/lib/workflows";
+import {
+  closePendingTaskCompletionWorkflow,
+  createTaskCompletionWorkflow,
+} from "@/lib/workflows";
 import { findTareaInOrg, findUserInOrg } from "@/lib/tenant";
 
 const updateTareaSchema = z.object({
@@ -103,6 +106,34 @@ export async function PATCH(
           tituloTarea: existing.titulo,
         });
         workflowCreated = true;
+      }
+
+      // Gerente/admin: alinear solicitud si mueve la tarjeta desde "Por aprobar"
+      if (
+        user.role !== "EMPLEADO" &&
+        existing.estado === "PENDIENTE_APROBACION"
+      ) {
+        if (targetEstado === "COMPLETADA") {
+          await closePendingTaskCompletionWorkflow({
+            tareaId: existing.id,
+            organizationId: user.organizationId,
+            resolutorId: user.id,
+            resolutorRole: user.role,
+            resolutorAreaId: user.areaId,
+            accion: "aprobar",
+            comentario: "Aprobado desde el tablero de tareas",
+          });
+        } else if (targetEstado === "EN_PROCESO" || targetEstado === "PENDIENTE") {
+          await closePendingTaskCompletionWorkflow({
+            tareaId: existing.id,
+            organizationId: user.organizationId,
+            resolutorId: user.id,
+            resolutorRole: user.role,
+            resolutorAreaId: user.areaId,
+            accion: "rechazar",
+            comentario: "Devuelto desde el tablero de tareas",
+          });
+        }
       }
     }
 

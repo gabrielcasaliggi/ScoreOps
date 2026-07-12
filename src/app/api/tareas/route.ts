@@ -60,7 +60,31 @@ export async function GET(request: NextRequest) {
     orderBy: [{ prioridad: "asc" }, { createdAt: "desc" }],
   });
 
-  return apiSuccess(tareas);
+  if (user.role === "EMPLEADO" || tareas.length === 0) {
+    return apiSuccess(tareas);
+  }
+
+  const pendingWorkflows = await prisma.workflowRequest.findMany({
+    where: {
+      organizationId: user.organizationId,
+      tipo: "TAREA_COMPLETADA",
+      estado: "PENDIENTE",
+      tareaId: { in: tareas.map((t) => t.id) },
+    },
+    select: { id: true, tareaId: true },
+  });
+  const workflowByTarea = new Map(
+    pendingWorkflows
+      .filter((w): w is typeof w & { tareaId: string } => w.tareaId != null)
+      .map((w) => [w.tareaId, w.id])
+  );
+
+  return apiSuccess(
+    tareas.map((t) => ({
+      ...t,
+      workflowId: workflowByTarea.get(t.id) ?? null,
+    }))
+  );
 }
 
 export async function POST(request: NextRequest) {

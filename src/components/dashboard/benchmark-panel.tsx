@@ -129,7 +129,8 @@ export function BenchmarkPanel() {
           </CardTitle>
           {orgPromedios && (
             <CardDescription>
-              Promedio org: KPI {formatPercent(orgPromedios.kpi)} · Premio {orgPromedios.premio}%
+              Promedio {scope === "area" ? "área" : "org"}: KPI {formatPercent(orgPromedios.kpi)} · Premio{" "}
+              {orgPromedios.premio}%
             </CardDescription>
           )}
         </CardHeader>
