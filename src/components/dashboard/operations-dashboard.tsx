@@ -21,14 +21,17 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
 import { formatPercent } from "@/lib/utils";
+import { labelEstadoTarea } from "@/lib/task-utils";
 
 interface OperationsData {
   alcance: { tipo: "area"; areaNombre: string } | { tipo: "global" };
   resumen: {
     tareasPendientes: number;
     tareasEnProceso: number;
+    tareasPorAprobar: number;
     tareasCompletadas: number;
     tareasVencidas: number;
+    solicitudesPendientes: number;
     objetivosActivos: number;
     objetivosEnRiesgo: number;
     kpiPromedioEquipo: number;
@@ -73,16 +76,13 @@ interface OperationsData {
 
 interface OperationsDashboardProps {
   isAdmin: boolean;
+  premioHabilitado?: boolean;
 }
 
-const ESTADO_LABEL: Record<string, string> = {
-  PENDIENTE: "Pendiente",
-  EN_PROCESO: "En proceso",
-  PENDIENTE_APROBACION: "En revisión",
-  COMPLETADA: "Completada",
-};
-
-export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
+export function OperationsDashboard({
+  isAdmin,
+  premioHabilitado = true,
+}: OperationsDashboardProps) {
   const [data, setData] = useState<OperationsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -115,10 +115,18 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
   }
 
   const scopeLabel =
-    data.alcance.tipo === "area" ? data.alcance.areaNombre : "Toda la cooperativa";
-  const abiertas = data.resumen.tareasPendientes + data.resumen.tareasEnProceso;
+    data.alcance.tipo === "area" ? data.alcance.areaNombre : "Toda la empresa";
+  const abiertas =
+    data.resumen.tareasPendientes +
+    data.resumen.tareasEnProceso +
+    (data.resumen.tareasPorAprobar ?? 0);
+  const porAprobar = data.resumen.solicitudesPendientes ?? 0;
   const tieneFoco =
-    data.resumen.tareasVencidas > 0 || data.resumen.objetivosEnRiesgo > 0;
+    data.resumen.tareasVencidas > 0 ||
+    data.resumen.objetivosEnRiesgo > 0 ||
+    porAprobar > 0;
+
+  const roleLabel = isAdmin ? "ADMINISTRADOR" : "GERENTE";
 
   return (
     <div className="space-y-8">
@@ -150,6 +158,14 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
       {tieneFoco && (
         <div className="dash-focus-strip flex flex-wrap items-center gap-2 px-4 py-3.5 text-sm">
           <span className="font-semibold text-amber-950">Foco hoy</span>
+          {porAprobar > 0 && (
+            <Link
+              href="/dashboard/aprobaciones"
+              className="rounded-lg bg-white/90 px-2.5 py-1 font-medium text-amber-900 shadow-sm ring-1 ring-amber-200/80 transition hover:bg-white"
+            >
+              {porAprobar} por aprobar
+            </Link>
+          )}
           {data.resumen.tareasVencidas > 0 && (
             <Link
               href="/dashboard/tareas?vencidas=1"
@@ -233,7 +249,7 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
                     </p>
                   </div>
                   <Badge variant={t.vencida ? "destructive" : "warning"}>
-                    {t.vencida ? "Vencida" : ESTADO_LABEL[t.estado]}
+                    {t.vencida ? "Vencida" : labelEstadoTarea(t.estado, roleLabel)}
                   </Badge>
                 </Link>
               ))
@@ -398,20 +414,22 @@ export function OperationsDashboard({ isAdmin }: OperationsDashboardProps) {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200/50 bg-gradient-to-r from-teal-50/80 to-indigo-50/40 px-5 py-4">
-        <div>
-          <p className="font-semibold text-slate-900">Premio semestral Art. 49</p>
-          <p className="text-sm text-muted-foreground">
-            Liquidación, tramos y metas colectivas en módulo aparte
-          </p>
+      {premioHabilitado && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200/50 bg-gradient-to-r from-teal-50/80 to-indigo-50/40 px-5 py-4">
+          <div>
+            <p className="font-semibold text-slate-900">Premio semestral Art. 49</p>
+            <p className="text-sm text-muted-foreground">
+              Liquidación, tramos y metas colectivas en módulo aparte
+            </p>
+          </div>
+          <Link href="/dashboard/premio">
+            <Button variant="outline" className="rounded-xl border-teal-200 bg-white/90">
+              Ir a Premio
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         </div>
-        <Link href="/dashboard/premio">
-          <Button variant="outline" className="rounded-xl border-teal-200 bg-white/90">
-            Ir a Premio
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
+      )}
     </div>
   );
 }

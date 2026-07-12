@@ -100,7 +100,9 @@ export default function DashboardPage() {
   }
 
   if (role === "ADMINISTRADOR" || role === "GERENTE") {
-    return <OperationsDashboard isAdmin={isAdmin} />;
+    return (
+      <OperationsDashboard isAdmin={isAdmin} premioHabilitado={premioHabilitado} />
+    );
   }
 
   if (!personalData) {

@@ -13,16 +13,9 @@ import { EmployeeObjetivosPanel, type ObjetivoResumen } from "@/components/dashb
 import { EmployeeKpiPanel } from "@/components/dashboard/employee-kpi-panel";
 import { TareaFechaLimiteBadge } from "@/components/tasks/tarea-fecha-limite";
 import { formatPercent } from "@/lib/utils";
-import { getTareaLimiteStatus } from "@/lib/task-utils";
+import { getTareaLimiteStatus, labelEstadoTarea } from "@/lib/task-utils";
 import type { PremioArt49 } from "@/lib/art49-types";
 import type { EmployeeTarea } from "@/components/tasks/employee-kanban";
-
-const ESTADO_LABEL: Record<string, string> = {
-  PENDIENTE: "Pendiente",
-  EN_PROCESO: "En proceso",
-  PENDIENTE_APROBACION: "En revisión",
-  COMPLETADA: "Completada",
-};
 
 interface KpiItem {
   kpiId: string;
@@ -193,7 +186,7 @@ export function EmployeeDashboard({
                 <div className="flex items-center gap-2">
                   <TareaFechaLimiteBadge fechaLimite={t.fechaLimite} estado={t.estado} />
                   <Badge variant="secondary" className="text-[10px]">
-                    {ESTADO_LABEL[t.estado] ?? t.estado.replace("_", " ")}
+                    {labelEstadoTarea(t.estado, "EMPLEADO")}
                   </Badge>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-60 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </div>

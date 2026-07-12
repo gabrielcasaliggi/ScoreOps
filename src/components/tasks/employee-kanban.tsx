@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { TaskTimer } from "@/components/tasks/task-timer";
 import { TareaFechaLimiteBadge, tareaCardLimiteClass } from "@/components/tasks/tarea-fecha-limite";
 import { formatMinutes, cn } from "@/lib/utils";
+import { labelEstadoTarea } from "@/lib/task-utils";
 
 type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "PENDIENTE_APROBACION" | "COMPLETADA";
 
@@ -32,10 +33,14 @@ interface EmployeeKanbanProps {
 }
 
 const COLUMNS: { key: TaskStatus; label: string; accent: string }[] = [
-  { key: "PENDIENTE", label: "Pendiente", accent: "border-t-slate-400" },
-  { key: "EN_PROCESO", label: "En proceso", accent: "border-t-blue-500" },
-  { key: "PENDIENTE_APROBACION", label: "En revisión", accent: "border-t-amber-500" },
-  { key: "COMPLETADA", label: "Completada", accent: "border-t-emerald-500" },
+  { key: "PENDIENTE", label: labelEstadoTarea("PENDIENTE", "EMPLEADO"), accent: "border-t-slate-400" },
+  { key: "EN_PROCESO", label: labelEstadoTarea("EN_PROCESO", "EMPLEADO"), accent: "border-t-blue-500" },
+  {
+    key: "PENDIENTE_APROBACION",
+    label: labelEstadoTarea("PENDIENTE_APROBACION", "EMPLEADO"),
+    accent: "border-t-amber-500",
+  },
+  { key: "COMPLETADA", label: labelEstadoTarea("COMPLETADA", "EMPLEADO"), accent: "border-t-emerald-500" },
 ];
 
 const PRIORITY_LABEL: Record<number, string> = {
@@ -100,7 +105,9 @@ export function EmployeeKanban({ tareas, onRefresh, soloVencidas = false }: Empl
               </div>
               <div className="space-y-2.5">
                 {columnTasks.length === 0 && (
-                  <p className="py-8 text-center text-xs text-muted-foreground">Vacío</p>
+                  <p className="py-8 text-center text-xs text-muted-foreground">
+                    Sin tareas en esta columna
+                  </p>
                 )}
                 {columnTasks.map((tarea) => (
                   <div

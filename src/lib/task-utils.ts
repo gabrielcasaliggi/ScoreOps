@@ -4,6 +4,40 @@ export interface TareaLimiteStatus {
   fechaLabel: string | null;
 }
 
+export type TaskStatusKey =
+  | "PENDIENTE"
+  | "EN_PROCESO"
+  | "PENDIENTE_APROBACION"
+  | "COMPLETADA";
+
+/** Labels operativos: gerente/admin ven "Por aprobar"; empleado "En revisión". */
+export function labelEstadoTarea(estado: string, role?: string | null): string {
+  if (estado === "PENDIENTE_APROBACION") {
+    return role === "EMPLEADO" ? "En revisión" : "Por aprobar";
+  }
+  const labels: Record<string, string> = {
+    PENDIENTE: "Pendiente",
+    EN_PROCESO: "En proceso",
+    COMPLETADA: "Completada",
+  };
+  return labels[estado] ?? estado;
+}
+
+export function badgeVariantEstadoTarea(
+  estado: string
+): "secondary" | "warning" | "success" | "outline" {
+  if (estado === "COMPLETADA") return "success";
+  if (estado === "EN_PROCESO" || estado === "PENDIENTE_APROBACION") return "warning";
+  return "secondary";
+}
+
+export const ESTADOS_TAREA_FILTRO: TaskStatusKey[] = [
+  "PENDIENTE",
+  "EN_PROCESO",
+  "PENDIENTE_APROBACION",
+  "COMPLETADA",
+];
+
 export function getTareaLimiteStatus(
   fechaLimite: string | Date | null | undefined,
   estado: string

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { AlertTriangle, LayoutGrid, List } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, ClipboardList, LayoutGrid, List, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +10,14 @@ import { ManagerKanban } from "@/components/tasks/manager-kanban";
 import { EmployeeKanban } from "@/components/tasks/employee-kanban";
 import { TareaFechaLimiteBadge } from "@/components/tasks/tarea-fecha-limite";
 import { PageHeader } from "@/components/layout/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatMinutes } from "@/lib/utils";
-import { getTareaLimiteStatus } from "@/lib/task-utils";
+import {
+  ESTADOS_TAREA_FILTRO,
+  badgeVariantEstadoTarea,
+  getTareaLimiteStatus,
+  labelEstadoTarea,
+} from "@/lib/task-utils";
 
 interface Tarea {
   id: string;
@@ -26,6 +32,7 @@ interface Tarea {
   fechaLimite?: string | null;
   evaluaProductividad: boolean;
   pesoProductividad: number;
+  workflowId?: string | null;
   user: { id: string; nombre: string; apellido: string };
   objetivo?: { id: string; titulo: string } | null;
 }
@@ -42,19 +49,8 @@ interface Objetivo {
   userId: string;
 }
 
-const ESTADO_VARIANT: Record<string, "secondary" | "warning" | "success"> = {
-  PENDIENTE: "secondary",
-  EN_PROCESO: "warning",
-  COMPLETADA: "success",
-};
-
-const ESTADO_LABEL: Record<string, string> = {
-  PENDIENTE: "Pendiente",
-  EN_PROCESO: "En proceso",
-  COMPLETADA: "Completada",
-};
-
 export function TareasView() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const userIdFilter = searchParams.get("userId") ?? "";
   const vencidasFilter = searchParams.get("vencidas") === "1";
@@ -64,11 +60,25 @@ export function TareasView() {
   const [filtro, setFiltro] = useState("");
   const [soloVencidas, setSoloVencidas] = useState(vencidasFilter);
   const [filtroUsuario, setFiltroUsuario] = useState(userIdFilter);
+  const [role, setRole] = useState<string | null>(null);
   const [isManager, setIsManager] = useState(false);
   const [areaNombre, setAreaNombre] = useState<string>();
   const [vista, setVista] = useState<"kanban" | "lista">("kanban");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
+  const syncUrl = useCallback(
+    (next: { userId?: string; vencidas?: boolean }) => {
+      const params = new URLSearchParams();
+      const userId = next.userId !== undefined ? next.userId : filtroUsuario;
+      const vencidas = next.vencidas !== undefined ? next.vencidas : soloVencidas;
+      if (userId) params.set("userId", userId);
+      if (vencidas) params.set("vencidas", "1");
+      const qs = params.toString();
+      router.replace(qs ? `/dashboard/tareas?${qs}` : "/dashboard/tareas", { scroll: false });
+    },
+    [filtroUsuario, soloVencidas, router]
+  );
 
   const loadTareas = useCallback(async () => {
     setLoadError("");
@@ -113,8 +123,9 @@ export function TareasView() {
         }
 
         const data = await meRes.json();
-        const manager =
-          data.user?.role === "ADMINISTRADOR" || data.user?.role === "GERENTE";
+        const userRole = data.user?.role ?? null;
+        const manager = userRole === "ADMINISTRADOR" || userRole === "GERENTE";
+        setRole(userRole);
         setIsManager(manager);
         setAreaNombre(data.user?.areaNombre);
 
@@ -152,6 +163,19 @@ export function TareasView() {
   const tareasVisibles = soloVencidas
     ? tareas.filter((t) => getTareaLimiteStatus(t.fechaLimite, t.estado).vencida)
     : tareas;
+
+  function setFiltroUsuarioAndUrl(userId: string) {
+    setFiltroUsuario(userId);
+    syncUrl({ userId });
+  }
+
+  function setSoloVencidasAndUrl(value: boolean | ((prev: boolean) => boolean)) {
+    setSoloVencidas((prev) => {
+      const next = typeof value === "function" ? value(prev) : value;
+      syncUrl({ vencidas: next });
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -192,7 +216,7 @@ export function TareasView() {
                 <select
                   className="h-9 rounded-xl border border-input bg-background px-3 text-sm"
                   value={filtroUsuario}
-                  onChange={(e) => setFiltroUsuario(e.target.value)}
+                  onChange={(e) => setFiltroUsuarioAndUrl(e.target.value)}
                 >
                   <option value="">Todos los empleados</option>
                   {usuarios.map((u) => (
@@ -205,7 +229,7 @@ export function TareasView() {
                   variant={soloVencidas ? "destructive" : "outline"}
                   size="sm"
                   className="rounded-xl"
-                  onClick={() => setSoloVencidas((v) => !v)}
+                  onClick={() => setSoloVencidasAndUrl((v) => !v)}
                 >
                   <AlertTriangle className="mr-2 h-4 w-4" />
                   Vencidas
@@ -240,7 +264,7 @@ export function TareasView() {
                 variant={soloVencidas ? "destructive" : "outline"}
                 size="sm"
                 className="rounded-xl"
-                onClick={() => setSoloVencidas((v) => !v)}
+                onClick={() => setSoloVencidasAndUrl((v) => !v)}
               >
                 <AlertTriangle className="mr-2 h-4 w-4" />
                 Vencidas
@@ -275,6 +299,7 @@ export function TareasView() {
                 usuarios={usuarios}
                 objetivos={objetivos}
                 areaNombre={areaNombre}
+                filtroEmpleado={filtroUsuario}
                 onRefresh={loadTareas}
               />
             ) : (
@@ -287,9 +312,21 @@ export function TareasView() {
           ) : (
             <>
               <div className="mb-4 flex flex-wrap gap-2">
-                {["", "PENDIENTE", "EN_PROCESO", "COMPLETADA"].map((estado) => (
+                <button
+                  type="button"
+                  onClick={() => setFiltro("")}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    filtro === ""
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  Todas
+                </button>
+                {ESTADOS_TAREA_FILTRO.map((estado) => (
                   <button
-                    key={estado || "all"}
+                    key={estado}
+                    type="button"
                     onClick={() => setFiltro(estado)}
                     className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       filtro === estado
@@ -297,61 +334,82 @@ export function TareasView() {
                         : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                     }`}
                   >
-                    {estado ? ESTADO_LABEL[estado] : "Todas"}
+                    {labelEstadoTarea(estado, role)}
                   </button>
                 ))}
-                {!isManager && (
-                  <button
-                    onClick={() => setSoloVencidas((v) => !v)}
-                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                      soloVencidas
-                        ? "bg-destructive text-destructive-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    Vencidas
-                  </button>
-                )}
               </div>
               <div className="space-y-3">
-                {tareasVisibles.length === 0 && (
-                  <p className="text-muted-foreground">No hay tareas para mostrar.</p>
-                )}
-                {tareasVisibles.map((tarea) => (
-                  <Card key={tarea.id}>
-                    <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium">{tarea.titulo}</p>
-                          <TareaFechaLimiteBadge
-                            fechaLimite={tarea.fechaLimite}
-                            estado={tarea.estado}
-                          />
-                          {tarea.evaluaProductividad && (
-                            <Badge variant="outline" className="text-[10px] text-violet-600">
-                              Premio x{tarea.pesoProductividad}
-                            </Badge>
-                          )}
+                {tareasVisibles.length === 0 ? (
+                  <EmptyState
+                    icon={ClipboardList}
+                    title="No hay tareas para mostrar"
+                    description={
+                      soloVencidas
+                        ? "No hay tareas vencidas con este filtro."
+                        : isManager
+                          ? "Asigná trabajo al equipo o ampliá el filtro."
+                          : "Cuando te asignen tareas, aparecen acá."
+                    }
+                    action={
+                      isManager ? (
+                        <Button
+                          className="rounded-xl"
+                          onClick={() => setVista("kanban")}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Ir al tablero para asignar
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="rounded-xl"
+                          onClick={() => setVista("kanban")}
+                        >
+                          Ir al tablero
+                        </Button>
+                      )
+                    }
+                  />
+                ) : (
+                  tareasVisibles.map((tarea) => (
+                    <Card key={tarea.id}>
+                      <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{tarea.titulo}</p>
+                            <TareaFechaLimiteBadge
+                              fechaLimite={tarea.fechaLimite}
+                              estado={tarea.estado}
+                            />
+                            {tarea.evaluaProductividad && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] text-violet-600"
+                              >
+                                Premio x{tarea.pesoProductividad}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {isManager && `${tarea.user.nombre} ${tarea.user.apellido}`}
+                            {isManager && tarea.objetivo && " · "}
+                            {tarea.objetivo?.titulo}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {isManager && `${tarea.user.nombre} ${tarea.user.apellido}`}
-                          {isManager && tarea.objetivo && " · "}
-                          {tarea.objetivo?.titulo}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground">
-                          Est: {formatMinutes(tarea.tiempoEstimado)}
-                          {tarea.tiempoReal != null &&
-                            ` · Real: ${formatMinutes(tarea.tiempoReal)}`}
-                        </span>
-                        <Badge variant={ESTADO_VARIANT[tarea.estado] ?? "secondary"}>
-                          {ESTADO_LABEL[tarea.estado] ?? tarea.estado}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">
+                            Est: {formatMinutes(tarea.tiempoEstimado)}
+                            {tarea.tiempoReal != null &&
+                              ` · Real: ${formatMinutes(tarea.tiempoReal)}`}
+                          </span>
+                          <Badge variant={badgeVariantEstadoTarea(tarea.estado)}>
+                            {labelEstadoTarea(tarea.estado, role)}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </>
           )}

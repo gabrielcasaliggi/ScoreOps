@@ -16,6 +16,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/layout/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatPercent } from "@/lib/utils";
 
 interface Usuario {
@@ -189,11 +190,17 @@ export default function ObjetivosPage() {
 
       <div className="space-y-4">
         {objetivos.length === 0 && (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              No hay objetivos creados. Crea el primero para asignar KPIs.
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Target}
+            title="Todavía no hay objetivos"
+            description="Creá el primero para asignar KPIs y vincular tareas del semestre."
+            action={
+              <Button onClick={openCreate} className="rounded-xl">
+                <Plus className="mr-2 h-4 w-4" />
+                Nuevo objetivo
+              </Button>
+            }
+          />
         )}
 
         {objetivos.map((obj) => {

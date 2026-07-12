@@ -10,7 +10,6 @@ import {
   Loader2,
   Plus,
   Sparkles,
-  User,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn, formatMinutes } from "@/lib/utils";
-import { countTareasVencidas, toFechaLimiteIso } from "@/lib/task-utils";
+import { countTareasVencidas, labelEstadoTarea, toFechaLimiteIso } from "@/lib/task-utils";
 import { TareaFechaLimiteBadge, tareaCardLimiteClass } from "@/components/tasks/tarea-fecha-limite";
 
 type TaskStatus = "PENDIENTE" | "EN_PROCESO" | "PENDIENTE_APROBACION" | "COMPLETADA";
@@ -65,6 +64,8 @@ interface ManagerKanbanProps {
   usuarios: Usuario[];
   objetivos?: ObjetivoOption[];
   areaNombre?: string;
+  /** Filtro controlado desde Tareas (URL). Vacío = todos. */
+  filtroEmpleado?: string;
   onRefresh: () => void;
 }
 
@@ -77,28 +78,28 @@ const COLUMNS: {
 }[] = [
   {
     key: "PENDIENTE",
-    label: "Pendiente",
+    label: labelEstadoTarea("PENDIENTE"),
     accent: "border-t-slate-400",
     icon: Circle,
     hint: "Por iniciar",
   },
   {
     key: "EN_PROCESO",
-    label: "En proceso",
+    label: labelEstadoTarea("EN_PROCESO"),
     accent: "border-t-blue-500",
     icon: CircleDot,
     hint: "En ejecución",
   },
   {
     key: "PENDIENTE_APROBACION",
-    label: "Por aprobar",
+    label: labelEstadoTarea("PENDIENTE_APROBACION", "GERENTE"),
     accent: "border-t-amber-500",
     icon: Sparkles,
     hint: "Decidí acá o en Aprobaciones",
   },
   {
     key: "COMPLETADA",
-    label: "Completada",
+    label: labelEstadoTarea("COMPLETADA"),
     accent: "border-t-emerald-500",
     icon: Sparkles,
     hint: "Cerradas",
@@ -126,9 +127,9 @@ export function ManagerKanban({
   usuarios,
   objetivos = [],
   areaNombre,
+  filtroEmpleado = "",
   onRefresh,
 }: ManagerKanbanProps) {
-  const [filtroEmpleado, setFiltroEmpleado] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -254,21 +255,6 @@ export function ManagerKanban({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <select
-              className="h-10 min-w-[180px] appearance-none rounded-xl border border-input bg-white pl-9 pr-8 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              value={filtroEmpleado}
-              onChange={(e) => setFiltroEmpleado(e.target.value)}
-            >
-              <option value="">Todos los empleados</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.nombre} {u.apellido}
-                </option>
-              ))}
-            </select>
-          </div>
           <Button onClick={() => setShowCreate(true)} className="shadow-md">
             <Plus className="mr-2 h-4 w-4" />
             Asignar tarea

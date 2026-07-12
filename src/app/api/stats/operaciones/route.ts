@@ -25,7 +25,7 @@ export async function GET() {
         ? { user: { areaId: user.areaId, organizationId: user.organizationId } }
         : { user: { organizationId: user.organizationId } };
 
-    const [tareas, objetivos, empleados, areas] = await Promise.all([
+    const [tareas, objetivos, empleados, areas, solicitudesPendientes] = await Promise.all([
       prisma.tarea.findMany({
         where: tareaScope,
         include: {
@@ -75,6 +75,15 @@ export async function GET() {
             orderBy: { nombre: "asc" },
           })
         : Promise.resolve([]),
+      prisma.workflowRequest.count({
+        where: {
+          organizationId: user.organizationId,
+          estado: "PENDIENTE",
+          ...(user.role === "GERENTE"
+            ? { solicitante: { areaId: user.areaId } }
+            : {}),
+        },
+      }),
     ]);
 
     const tareasAbiertas = tareas.filter((t) => t.estado !== "COMPLETADA");
@@ -156,8 +165,10 @@ export async function GET() {
       resumen: {
         tareasPendientes: tareas.filter((t) => t.estado === "PENDIENTE").length,
         tareasEnProceso: tareas.filter((t) => t.estado === "EN_PROCESO").length,
+        tareasPorAprobar: tareas.filter((t) => t.estado === "PENDIENTE_APROBACION").length,
         tareasCompletadas: tareas.filter((t) => t.estado === "COMPLETADA").length,
         tareasVencidas: tareasVencidas.length,
+        solicitudesPendientes,
         objetivosActivos: objetivos.length,
         objetivosEnRiesgo: objetivosRiesgo.length,
         kpiPromedioEquipo:
