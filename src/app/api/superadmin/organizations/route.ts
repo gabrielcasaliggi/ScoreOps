@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireSuperAdmin } from "@/lib/api";
 import { seedSystemConfig } from "@/lib/system-config";
+import { ADMIN_DEFAULT_AREA, normalizeAreaNames } from "@/lib/default-areas";
 
 const createOrgSchema = z.object({
   slug: z
@@ -17,7 +18,9 @@ const createOrgSchema = z.object({
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
-  areaNombre: z.string().min(1).max(80).default("General"),
+  /** @deprecated usar areasIniciales — se mantiene por compatibilidad */
+  areaNombre: z.string().min(1).max(80).optional(),
+  areasIniciales: z.array(z.string().min(1).max(80)).max(20).optional(),
   adminEmail: z.string().email(),
   adminPassword: z.string().min(6),
   adminNombre: z.string().min(1),
@@ -74,6 +77,19 @@ export async function POST(request: NextRequest) {
     });
     if (existing) return apiError("El slug ya está en uso");
 
+    const areaNames = normalizeAreaNames(
+      data.areasIniciales?.length
+        ? data.areasIniciales
+        : data.areaNombre
+          ? [
+              data.areaNombre,
+              ...normalizeAreaNames(undefined).filter(
+                (n) => n.toLowerCase() !== data.areaNombre!.toLowerCase()
+              ),
+            ]
+          : undefined
+    );
+
     const passwordHash = await bcrypt.hash(data.adminPassword, 10);
 
     const org = await prisma.$transaction(async (tx) => {
@@ -91,9 +107,19 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      const area = await tx.area.create({
-        data: { organizationId: created.id, nombre: data.areaNombre },
-      });
+      const createdAreas = [];
+      for (const nombre of areaNames) {
+        createdAreas.push(
+          await tx.area.create({
+            data: { organizationId: created.id, nombre },
+          })
+        );
+      }
+
+      const adminArea =
+        createdAreas.find(
+          (a) => a.nombre.toLowerCase() === ADMIN_DEFAULT_AREA.toLowerCase()
+        ) ?? createdAreas[0];
 
       await tx.user.create({
         data: {
@@ -103,24 +129,25 @@ export async function POST(request: NextRequest) {
           nombre: data.adminNombre,
           apellido: data.adminApellido,
           role: "ADMINISTRADOR",
-          areaId: area.id,
+          areaId: adminArea.id,
           legajo: "0001",
         },
       });
 
-      return created;
+      return { created, areaCount: createdAreas.length };
     });
 
-    await seedSystemConfig(org.id);
+    await seedSystemConfig(org.created.id);
 
     return apiSuccess(
       {
         organization: {
-          id: org.id,
-          slug: org.slug,
-          name: org.name,
+          id: org.created.id,
+          slug: org.created.slug,
+          name: org.created.name,
+          areas: org.areaCount,
         },
-        loginHint: `Login con orgSlug "${org.slug}" y ${data.adminEmail}`,
+        loginHint: `Login con orgSlug "${org.created.slug}" y ${data.adminEmail}. El admin puede crear más áreas en Empleados.`,
       },
       201
     );

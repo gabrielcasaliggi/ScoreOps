@@ -54,7 +54,7 @@ export function OnboardingChecklist() {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Building2 className="h-5 w-5 text-primary" />
-          Onboarding de tu cooperativa
+          Onboarding de tu empresa
         </CardTitle>
         <CardDescription>
           Completá estos pasos para dejar ScoreOps listo para el equipo ({progreso}%)

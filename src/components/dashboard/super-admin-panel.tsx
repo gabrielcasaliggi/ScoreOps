@@ -34,7 +34,7 @@ export function SuperAdminPanel() {
     adminPassword: "",
     adminNombre: "",
     adminApellido: "",
-    areaNombre: "General",
+    areasTexto: "Administración\nOperaciones\nComercial\nFinanzas\nRRHH",
     premioHabilitado: true,
   });
 
@@ -69,7 +69,19 @@ export function SuperAdminPanel() {
     const res = await fetch("/api/superadmin/organizations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        slug: form.slug,
+        name: form.name,
+        adminEmail: form.adminEmail,
+        adminPassword: form.adminPassword,
+        adminNombre: form.adminNombre,
+        adminApellido: form.adminApellido,
+        premioHabilitado: form.premioHabilitado,
+        areasIniciales: form.areasTexto
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean),
+      }),
     });
     const data = await res.json();
     setCreating(false);
@@ -88,7 +100,7 @@ export function SuperAdminPanel() {
       adminPassword: "",
       adminNombre: "",
       adminApellido: "",
-      areaNombre: "General",
+      areasTexto: "Administración\nOperaciones\nComercial\nFinanzas\nRRHH",
       premioHabilitado: true,
     });
     load();
@@ -152,7 +164,7 @@ export function SuperAdminPanel() {
           <CardHeader>
             <CardTitle>Nueva empresa</CardTitle>
             <CardDescription>
-              Se crea la organización, un área inicial y el usuario administrador
+              Se crea la empresa con áreas iniciales y un administrador con control total
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -177,12 +189,17 @@ export function SuperAdminPanel() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Área inicial</Label>
-                <Input
-                  value={form.areaNombre}
-                  onChange={(e) => setForm({ ...form, areaNombre: e.target.value })}
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Áreas iniciales (una por línea)</Label>
+                <textarea
+                  className="flex min-h-[7.5rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.areasTexto}
+                  onChange={(e) => setForm({ ...form, areasTexto: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  El administrador queda en «Administración» y luego puede agregar o editar áreas
+                  desde Empleados.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Email admin</Label>

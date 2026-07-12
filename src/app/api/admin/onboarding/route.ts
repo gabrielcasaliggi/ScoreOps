@@ -37,8 +37,8 @@ export async function GET() {
       {
         id: "areas",
         titulo: "Configurar áreas",
-        descripcion: "Al menos un sector o departamento de la cooperativa.",
-        completado: areas >= 1,
+        descripcion: "Definí sectores/departamentos (más de un área) en Empleados.",
+        completado: areas >= 2,
         href: "/dashboard/empleados",
       },
       {
@@ -65,7 +65,7 @@ export async function GET() {
       {
         id: "branding",
         titulo: "Personalizar marca",
-        descripcion: "Logo o color de la cooperativa en el sistema.",
+        descripcion: "Logo o color de la empresa en el sistema.",
         completado: brandingListo,
         href: "/dashboard/configuracion",
       },

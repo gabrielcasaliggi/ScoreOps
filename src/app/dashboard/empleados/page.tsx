@@ -24,10 +24,12 @@ import {
 } from "@/components/ui/dialog";
 import { EMPLEADOS_CSV_TEMPLATE } from "@/lib/csv-utils";
 import { PageHeader } from "@/components/layout/page-header";
+import { AreasManager } from "@/components/dashboard/areas-manager";
 
 interface Area {
   id: string;
   nombre: string;
+  usuarios?: number;
 }
 
 interface Usuario {
@@ -92,7 +94,8 @@ export default function EmpleadosPage() {
       fetch("/api/areas"),
     ]);
     setUsuarios(await usrRes.json());
-    setAreas(await areaRes.json());
+    const areasData = await areaRes.json();
+    setAreas(Array.isArray(areasData) ? areasData : []);
     setLoading(false);
   }, [activoFilter, q]);
 
@@ -265,6 +268,8 @@ export default function EmpleadosPage() {
         </CardContent>
       </Card>
 
+      <AreasManager areas={areas} onChanged={load} />
+
       <div className="overflow-x-auto rounded-xl border bg-white/80">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-muted/50 text-left">
@@ -403,21 +408,29 @@ export default function EmpleadosPage() {
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Área</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={form.areaId}
-                  onChange={(e) => setForm({ ...form, areaId: e.target.value })}
-                  required
-                >
-                  {areas.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-2">
+              <Label>Área</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={form.areaId}
+                onChange={(e) => setForm({ ...form, areaId: e.target.value })}
+                required
+              >
+                <option value="" disabled>
+                  Seleccioná un área
+                </option>
+                {areas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nombre}
+                  </option>
+                ))}
+              </select>
+              {areas.length < 2 && (
+                <p className="text-xs text-amber-700">
+                  Tip: creá más áreas arriba en «Áreas de la empresa» antes de cargar todo el equipo.
+                </p>
+              )}
+            </div>
               <div className="space-y-2">
                 <Label>Rol</Label>
                 <select
