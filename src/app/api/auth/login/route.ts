@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       where: { slug: orgSlug },
     });
     if (!org || !org.activo) {
-      return apiError("Empresa no encontrada. Revisá el código (slug).", 404);
+      return apiError("Empresa no encontrada. Revisá el código de empresa.", 404);
     }
 
     const user = await prisma.user.findUnique({
