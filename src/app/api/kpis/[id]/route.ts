@@ -25,8 +25,11 @@ export async function PATCH(
   const { id } = await params;
 
   try {
-    const existing = await prisma.kPI.findUnique({
-      where: { id },
+    const existing = await prisma.kPI.findFirst({
+      where: {
+        id,
+        objetivo: { user: { organizationId: user.organizationId } },
+      },
       include: {
         objetivo: {
           include: {
@@ -36,10 +39,6 @@ export async function PATCH(
       },
     });
     if (!existing) return apiError("KPI no encontrado", 404);
-
-    if (existing.objetivo.user.organizationId !== user.organizationId) {
-      return apiError("Sin permisos", 403);
-    }
 
     if (user.role === "EMPLEADO" && existing.objetivo.userId !== user.id) {
       return apiError("Sin permisos", 403);

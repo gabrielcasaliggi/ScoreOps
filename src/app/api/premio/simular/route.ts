@@ -47,6 +47,10 @@ export async function POST(request: NextRequest) {
 
     if (!empleado) return apiError("Empleado no encontrado", 404);
 
+    if (user.role === "GERENTE" && empleado.areaId !== user.areaId) {
+      return apiError("Sin permisos para simular fuera de tu área", 403);
+    }
+
     const actual = await buildEmployeeProductivity(empleado, getSemesterPeriod());
 
     const kpiSim =

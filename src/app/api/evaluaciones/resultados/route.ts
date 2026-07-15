@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     let resultados = await getResultadosCiclo(cicloId);
 
     if (user.role === "GERENTE") {
-      resultados = resultados.filter((r) => r.area === user.areaNombre);
+      resultados = resultados.filter((r) => r.areaId === user.areaId);
     }
 
     return apiSuccess(resultados);

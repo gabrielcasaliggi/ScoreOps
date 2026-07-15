@@ -119,7 +119,8 @@ export async function POST(request: NextRequest) {
     if (parsed.data.objetivoId) {
       const ownershipError = await assertObjetivoOwnership(
         parsed.data.objetivoId,
-        targetUserId
+        targetUserId,
+        user.organizationId
       );
       if (ownershipError) return ownershipError;
     }

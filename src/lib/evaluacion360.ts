@@ -151,6 +151,7 @@ export interface ResultadoEvaluado {
   nombre: string;
   apellido: string;
   area: string;
+  areaId: string;
   puntajeGlobal: number;
   porRol: Partial<Record<EvaluacionRol, number>>;
   porCompetencia: { competencia: string; puntaje: number }[];
@@ -167,7 +168,8 @@ export function calcularResultadoEvaluado(
   apellido: string,
   area: string,
   respuestas: { rol: EvaluacionRol; competencia: string; puntaje: number }[],
-  pesos: Evaluacion360Pesos
+  pesos: Evaluacion360Pesos,
+  areaId = ""
 ): ResultadoEvaluado {
   const porRol: Partial<Record<EvaluacionRol, number>> = {};
   const roles: EvaluacionRol[] = ["AUTOEVALUACION", "GERENTE", "PAR", "SUBORDINADO"];
@@ -204,6 +206,7 @@ export function calcularResultadoEvaluado(
     nombre,
     apellido,
     area,
+    areaId,
     puntajeGlobal,
     porRol,
     porCompetencia,
@@ -241,7 +244,8 @@ export async function getResultadosCiclo(cicloId: string): Promise<ResultadoEval
       ev.apellido,
       ev.area.nombre,
       rows.map((r) => ({ rol: r.rol, competencia: r.competencia, puntaje: r.puntaje })),
-      pesos
+      pesos,
+      ev.areaId
     );
   });
 }

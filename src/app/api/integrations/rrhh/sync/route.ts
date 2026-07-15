@@ -3,7 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess } from "@/lib/api";
-import { areaInOrg, resolveDefaultOrganizationId, userByOrgEmail } from "@/lib/tenant";
+import { areaInOrg, userByOrgEmail } from "@/lib/tenant";
 import { extractApiKeyFromRequest, hasScope, resolveApiKey } from "@/lib/api-key";
 
 const syncSchema = z.object({
@@ -36,14 +36,39 @@ async function resolveSyncAuth(request: NextRequest, bodyApiKey?: string) {
 
   const expectedKey = process.env.INTEGRATION_API_KEY;
   if (!expectedKey) {
-    return { error: apiError("Integración RRHH no configurada. Usá API key por org (X-Api-Key) o INTEGRATION_API_KEY", 503) };
+    return {
+      error: apiError(
+        "Integración RRHH no configurada. Usá API key por org (X-Api-Key).",
+        503
+      ),
+    };
   }
   if (bodyApiKey !== expectedKey) {
     return { error: apiError("API key inválida", 401) };
   }
 
-  const organizationId = await resolveDefaultOrganizationId();
-  return { error: null, organizationId };
+  // Legacy: exige slug explícito para no caerle siempre a la org default
+  const orgSlug =
+    request.headers.get("x-org-slug")?.trim().toLowerCase() ||
+    request.headers.get("x-organization-slug")?.trim().toLowerCase();
+  if (!orgSlug) {
+    return {
+      error: apiError(
+        "Con INTEGRATION_API_KEY legacy enviá header X-Org-Slug (o preferí X-Api-Key por empresa)",
+        400
+      ),
+    };
+  }
+
+  const org = await prisma.organization.findUnique({
+    where: { slug: orgSlug },
+    select: { id: true, activo: true },
+  });
+  if (!org || !org.activo) {
+    return { error: apiError("Empresa no encontrada para X-Org-Slug", 404) };
+  }
+
+  return { error: null, organizationId: org.id };
 }
 
 /**

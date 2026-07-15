@@ -77,13 +77,15 @@ export async function POST(request: NextRequest) {
       return apiError("Los ajustes de KPI no requieren solicitud en esta organización");
     }
 
-    const kpi = await prisma.kPI.findUnique({
-      where: { id: parsed.data.kpiId },
+    const kpi = await prisma.kPI.findFirst({
+      where: {
+        id: parsed.data.kpiId,
+        objetivo: { userId: user.id, user: { organizationId: user.organizationId } },
+      },
       include: { objetivo: { include: { user: true } } },
     });
 
     if (!kpi) return apiError("KPI no encontrado", 404);
-    if (kpi.objetivo.userId !== user.id) return apiError("Sin permisos", 403);
 
     const workflow = await createKpiAdjustmentWorkflow({
       organizationId: user.organizationId,

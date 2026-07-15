@@ -2,18 +2,23 @@ import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
-/** Verifica que el objetivo pertenezca al usuario autenticado. */
+/** Verifica que el objetivo pertenezca al usuario y a la misma organización. */
 export async function assertObjetivoOwnership(
   objetivoId: string,
-  userId: string
+  userId: string,
+  organizationId: string
 ): Promise<NextResponse | null> {
-  const objetivo = await prisma.objetivo.findUnique({
-    where: { id: objetivoId },
-    select: { userId: true },
+  const objetivo = await prisma.objetivo.findFirst({
+    where: {
+      id: objetivoId,
+      userId,
+      user: { organizationId },
+    },
+    select: { id: true },
   });
 
-  if (!objetivo || objetivo.userId !== userId) {
-    return apiError("Sin permisos", 403);
+  if (!objetivo) {
+    return apiError("Objetivo no encontrado", 404);
   }
 
   return null;

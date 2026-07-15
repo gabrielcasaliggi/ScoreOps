@@ -54,6 +54,9 @@ export async function POST() {
   const { error, user } = await requireAuth(["ADMINISTRADOR", "GERENTE"]);
   if (error || !user) return error;
 
-  const created = await generateAllNotifications();
+  const created = await generateAllNotifications({
+    organizationId: user.organizationId,
+    areaId: user.role === "GERENTE" ? user.areaId : undefined,
+  });
   return apiSuccess({ created });
 }

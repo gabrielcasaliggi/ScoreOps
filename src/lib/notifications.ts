@@ -115,8 +115,23 @@ export async function generateNotificationsForUser(userId: string): Promise<numb
   return created;
 }
 
-export async function generateAllNotifications(): Promise<number> {
-  const users = await prisma.user.findMany({ select: { id: true } });
+export async function generateAllNotifications(
+  scope?: { organizationId: string; areaId?: string | null }
+): Promise<number> {
+  const where: { activo?: boolean; organizationId?: string; areaId?: string } = {
+    activo: true,
+  };
+  if (scope?.organizationId) {
+    where.organizationId = scope.organizationId;
+  }
+  if (scope?.areaId) {
+    where.areaId = scope.areaId;
+  }
+
+  const users = await prisma.user.findMany({
+    where,
+    select: { id: true },
+  });
   let total = 0;
   for (const user of users) {
     total += await generateNotificationsForUser(user.id);

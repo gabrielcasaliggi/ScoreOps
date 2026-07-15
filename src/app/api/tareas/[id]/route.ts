@@ -57,7 +57,8 @@ export async function PATCH(
     if (parsed.data.objetivoId) {
       const ownershipError = await assertObjetivoOwnership(
         parsed.data.objetivoId,
-        existing.userId
+        existing.userId,
+        user.organizationId
       );
       if (ownershipError) return ownershipError;
     }
