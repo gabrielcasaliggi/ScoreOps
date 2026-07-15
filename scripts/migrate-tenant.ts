@@ -21,7 +21,7 @@ async function main() {
         slug: DEFAULT_SLUG,
         name: DEFAULT_NAME,
         tagline: "Puntajes, tareas y premio a la productividad",
-        primaryColor: "#5b4ae0",
+        primaryColor: "#0f766e",
       },
     });
     console.log(`Organización creada: ${org.name} (${org.slug})`);

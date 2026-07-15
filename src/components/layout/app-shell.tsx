@@ -144,11 +144,11 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   function navLinkClass(active: boolean, compact = false) {
     return cn(
-      "relative flex items-center gap-2 rounded-xl font-medium transition-all duration-200 shrink-0",
+      "relative flex items-center gap-2 rounded-lg font-medium transition-colors duration-200 shrink-0",
       compact ? "px-3 py-2 text-sm" : "px-3.5 py-2 text-sm",
       active
-        ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-        : "text-muted-foreground hover:bg-white/80 hover:text-foreground"
+        ? "bg-primary/10 text-primary after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary"
+        : "text-muted-foreground hover:bg-slate-100/80 hover:text-foreground"
     );
   }
 
@@ -164,7 +164,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
       <span
         className={cn(
           "ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold",
-          active ? "bg-white text-primary" : "bg-destructive text-white"
+          active ? "bg-primary text-primary-foreground" : "bg-destructive text-white"
         )}
       >
         {value}
@@ -174,15 +174,22 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   return (
     <div className="min-h-screen app-mesh-bg">
-      <header className="sticky top-0 z-50 border-b border-white/60 bg-white/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-[#f8fafb]/95 backdrop-blur-md">
         <div className="mx-auto grid h-16 max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-4 sm:gap-3 sm:px-6">
           <Link
             href="/dashboard"
-            className="group flex max-w-[10rem] shrink-0 items-center gap-2 transition-transform duration-300 hover:scale-[1.02] sm:max-w-[12rem]"
+            className="group flex max-w-[11rem] shrink-0 items-center gap-2.5 sm:max-w-[14rem]"
           >
-            <BrandIsotype size="sm" className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
-            <span className="hidden truncate font-bold tracking-tight sm:block">
-              <span className="text-sm lg:text-base">{branding.name}</span>
+            <BrandIsotype size="sm" className="shrink-0" />
+            <span className="hidden min-w-0 sm:block">
+              <span className="block truncate font-display text-[0.95rem] font-semibold leading-tight tracking-tight text-slate-900 lg:text-base">
+                {branding.name}
+              </span>
+              {branding.tagline ? (
+                <span className="mt-0.5 hidden truncate text-[10px] text-muted-foreground xl:block">
+                  {branding.tagline}
+                </span>
+              ) : null}
             </span>
           </Link>
 
@@ -271,14 +278,14 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-xl hover:bg-white/80"
+                className="rounded-xl hover:bg-slate-100/80"
                 title="Configuración"
               >
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
             <div className="hidden items-center gap-2 border-l border-border/60 pl-2 md:flex lg:pl-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-violet-500/20 text-xs font-bold text-primary ring-2 ring-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-2 ring-white">
                 {getInitials(user.nombre, user.apellido)}
               </div>
               <div className="hidden text-right text-sm leading-tight 2xl:block">
@@ -293,7 +300,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-xl hover:bg-white/80"
+              className="rounded-xl hover:bg-slate-100/80"
               onClick={handleLogout}
               title="Cerrar sesión"
             >
@@ -302,7 +309,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
           </div>
         </div>
 
-        <nav className="flex gap-0.5 overflow-x-auto border-t border-border/50 bg-white/60 px-2 py-1.5 scrollbar-none md:hidden">
+        <nav className="flex gap-0.5 overflow-x-auto border-t border-slate-200/80 bg-[#f8fafb] px-2 py-1.5 scrollbar-none md:hidden">
           {allNav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
@@ -317,9 +324,9 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                   isEmpresas
                     ? active
                       ? "bg-slate-900 text-white"
-                      : "bg-teal-600 text-white"
+                      : "bg-teal-700 text-white"
                     : active
-                      ? "text-primary"
+                      ? "bg-primary/10 text-primary"
                       : "text-muted-foreground"
                 )}
               >

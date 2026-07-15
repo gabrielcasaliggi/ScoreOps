@@ -42,9 +42,9 @@ export function BrandIsotype({
     >
       <defs>
         <linearGradient id={gradId} x1="8" y1="6" x2="40" y2="42" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#6d5ce8" />
-          <stop offset="0.5" stopColor="#5b4ae0" />
-          <stop offset="1" stopColor="#4338ca" />
+          <stop stopColor="#14b8a6" />
+          <stop offset="0.45" stopColor="#0f766e" />
+          <stop offset="1" stopColor="#134e4a" />
         </linearGradient>
         <linearGradient id={shineId} x1="0" y1="0" x2="48" y2="40" gradientUnits="userSpaceOnUse">
           <stop stopColor="white" stopOpacity="0.22" />
@@ -62,8 +62,8 @@ export function BrandIsotype({
             dx="0"
             dy={elevated ? "5" : "3"}
             stdDeviation={elevated ? "5" : "3"}
-            floodColor="#4f46e5"
-            floodOpacity={elevated ? "0.45" : "0.32"}
+            floodColor="#0f766e"
+            floodOpacity={elevated ? "0.4" : "0.28"}
           />
         </filter>
       </defs>
@@ -94,7 +94,7 @@ export function BrandIsotype({
           strokeLinecap="round"
           fill="none"
         />
-        <circle cx="35" cy="12" r="2.5" fill="#6ee7b7" className="live-dot" />
+        <circle cx="35" cy="12" r="2.5" fill="#fde68a" className="live-dot" />
         <circle cx="35" cy="12" r="1.1" fill="white" fillOpacity="0.95" />
       </g>
     </svg>

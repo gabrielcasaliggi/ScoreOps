@@ -92,7 +92,7 @@ async function main() {
         ${DEFAULT_SLUG},
         ${DEFAULT_NAME},
         ${"Puntajes, tareas y premio a la productividad"},
-        ${"#5b4ae0"},
+        ${"#0f766e"},
         true,
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP

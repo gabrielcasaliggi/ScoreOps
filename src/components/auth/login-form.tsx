@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BRAND } from "@/lib/brand";
 
 const ORG_SLUG_STORAGE_KEY = "scoreops.lastOrgSlug";
 
@@ -97,11 +96,11 @@ export function LoginForm() {
   if (showForgot) {
     return (
       <Card
-        className="glass-card w-full max-w-md animate-page-enter rounded-3xl"
+        className="login-panel w-full max-w-md animate-page-enter rounded-2xl"
         style={{ animationDelay: "120ms" }}
       >
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Recuperar acceso</CardTitle>
+          <CardTitle className="font-display text-2xl font-semibold">Recuperar acceso</CardTitle>
           <CardDescription>
             Se notificará a un administrador para restablecer tu contraseña
           </CardDescription>
@@ -154,11 +153,13 @@ export function LoginForm() {
 
   return (
     <Card
-      className="glass-card w-full max-w-md animate-page-enter rounded-3xl border-white/60 shadow-2xl"
+      className="login-panel w-full max-w-md animate-page-enter rounded-2xl"
       style={{ animationDelay: "120ms" }}
     >
       <CardHeader className="text-center pb-2">
-        <CardTitle className="text-2xl font-bold">Ingresar a {BRAND.name}</CardTitle>
+        <CardTitle className="font-display text-2xl font-semibold tracking-tight">
+          Ingresar
+        </CardTitle>
         <CardDescription>
           Usá el código de tu empresa, tu email y la contraseña
         </CardDescription>

@@ -14,10 +14,10 @@ const variantStyles: Record<
     wash: "from-primary/[0.04]",
   },
   violet: {
-    icon: "bg-violet-500/10 text-violet-600",
-    value: "text-violet-700",
-    ring: "ring-violet-500/15",
-    wash: "from-violet-500/[0.06]",
+    icon: "bg-amber-500/10 text-amber-700",
+    value: "text-amber-800",
+    ring: "ring-amber-500/15",
+    wash: "from-amber-500/[0.06]",
   },
   emerald: {
     icon: "bg-teal-500/10 text-teal-700",
@@ -73,14 +73,14 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "glass-card stat-shine group relative overflow-hidden rounded-2xl p-5 ring-1 transition-all duration-200 hover:-translate-y-0.5",
+        "group relative overflow-hidden rounded-xl border border-border/90 bg-white p-5 shadow-[0_1px_0_rgba(15,23,42,0.03),0_4px_14px_rgba(15,23,42,0.04)] ring-1 transition-shadow duration-200 hover:shadow-[0_1px_0_rgba(15,23,42,0.04),0_8px_20px_rgba(15,23,42,0.06)]",
         styles.ring,
         className
       )}
     >
       <div
         className={cn(
-          "pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent opacity-90",
+          "pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent opacity-80",
           styles.wash
         )}
       />
@@ -91,7 +91,7 @@ export function StatCard({
           </p>
           <p
             className={cn(
-              "mt-2 text-[1.85rem] font-bold tracking-tight tabular-nums leading-none",
+              "mt-2 font-display text-[1.75rem] font-semibold tracking-tight tabular-nums leading-none",
               styles.value
             )}
           >

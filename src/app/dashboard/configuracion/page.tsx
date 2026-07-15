@@ -113,7 +113,7 @@ export default function ConfiguracionPage() {
     name: "",
     tagline: "",
     logoUrl: "",
-    primaryColor: "#2563eb",
+    primaryColor: "#0f766e",
   });
   const [orgLoading, setOrgLoading] = useState(false);
   const [orgError, setOrgError] = useState("");
@@ -165,7 +165,7 @@ export default function ConfiguracionPage() {
                   name: org.name ?? "",
                   tagline: org.tagline ?? "",
                   logoUrl: org.logoUrl ?? "",
-                  primaryColor: org.primaryColor ?? "#2563eb",
+                  primaryColor: org.primaryColor ?? "#0f766e",
                 });
               }
             });
@@ -322,7 +322,7 @@ export default function ConfiguracionPage() {
       name: data.name ?? "",
       tagline: data.tagline ?? "",
       logoUrl: data.logoUrl ?? "",
-      primaryColor: data.primaryColor ?? "#2563eb",
+      primaryColor: data.primaryColor ?? "#0f766e",
     });
     setOrgMessage("Marca actualizada");
     router.refresh();
