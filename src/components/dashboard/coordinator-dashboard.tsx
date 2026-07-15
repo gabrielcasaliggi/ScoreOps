@@ -47,11 +47,18 @@ interface EquipoStatsResponse {
 interface CoordinatorDashboardProps {
   isAdmin: boolean;
   userAreaNombre?: string;
+  /** En /premio: menos hero duplicado y sin fórmula (ya está arriba) */
+  variant?: "default" | "premio";
 }
 
 const REFRESH_MS = 45_000;
 
-export function CoordinatorDashboard({ isAdmin, userAreaNombre }: CoordinatorDashboardProps) {
+export function CoordinatorDashboard({
+  isAdmin,
+  userAreaNombre: _userAreaNombre,
+  variant = "default",
+}: CoordinatorDashboardProps) {
+  const isPremioPage = variant === "premio";
   const [data, setData] = useState<EquipoStatsResponse | null>(null);
   const [periodo, setPeriodo] = useState<"actual" | "anterior">("actual");
   const [areaId, setAreaId] = useState("");
@@ -94,7 +101,7 @@ export function CoordinatorDashboard({ isAdmin, userAreaNombre }: CoordinatorDas
 
   return (
     <div className="space-y-6">
-      {/* Hero */}
+      {!isPremioPage && (
       <div className="hero-gradient relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-primary/25">
         <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -bottom-12 -left-8 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
@@ -164,6 +171,31 @@ export function CoordinatorDashboard({ isAdmin, userAreaNombre }: CoordinatorDas
           </p>
         )}
       </div>
+      )}
+
+      {isPremioPage && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <Calendar className="h-4 w-4 text-slate-500" />
+            <span className="font-medium text-slate-900">
+              {data.periodo.mesesCalculoLabel ?? data.periodo.label}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-slate-600">
+              Pago estimado: <strong>{data.periodo.mesPagoLabel}</strong>
+              {data.periodo.liquidacionPendiente && data.periodo.diasHastaLiquidacion > 0 && (
+                <> ({data.periodo.diasHastaLiquidacion} días)</>
+              )}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-slate-600">{scopeLabel}</span>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-lg" onClick={() => loadData()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Actualizar
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <select
@@ -192,40 +224,54 @@ export function CoordinatorDashboard({ isAdmin, userAreaNombre }: CoordinatorDas
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Empleados"
+          label="Personas en el alcance"
           value={data.resumen.totalEmpleados}
           variant="slate"
         />
         <StatCard
-          label="KPI promedio"
+          label="KPI promedio del equipo"
           value={formatPercent(data.resumen.kpiPromedioEquipo)}
-          variant="emerald"
+          hint="Avance de objetivos medibles"
+          variant="blue"
         />
         <StatCard
-          label="Premio Art. 49"
+          label="% premio promedio"
           value={
             data.resumen.puntajePremioPromedio != null
               ? `${data.resumen.puntajePremioPromedio}%`
               : "—"
           }
-          hint="Promedio % sueldo ref. (máx. 50%)"
+          hint="Del sueldo de referencia (máx. 50%)"
           icon={Award}
-          variant="violet"
+          variant="slate"
         />
       </div>
 
-      <MetasColectivasPanel isAdmin={isAdmin} />
+      <div>
+        <h2 className="mb-3 font-display text-base font-bold tracking-tight text-slate-900">
+          Metas del equipo
+        </h2>
+        <MetasColectivasPanel isAdmin={isAdmin} />
+      </div>
 
-      <PremioFormulaExplainer />
+      {!isPremioPage && <PremioFormulaExplainer />}
 
       <BenchmarkPanel />
 
-      <TeamDashboard
-        resumen={data.resumen}
-        empleados={data.empleados}
-        porArea={data.porArea}
-        periodoLabel={data.periodo.label}
-      />
+      <div>
+        <h2 className="mb-1 font-display text-base font-bold tracking-tight text-slate-900">
+          Quién cobraría hoy y a quién acompañar
+        </h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Ranking por persona: % de premio, tramos cumplidos y montos cuando hay sueldo cargado.
+        </p>
+        <TeamDashboard
+          resumen={data.resumen}
+          empleados={data.empleados}
+          porArea={data.porArea}
+          periodoLabel={data.periodo.label}
+        />
+      </div>
     </div>
   );
 }

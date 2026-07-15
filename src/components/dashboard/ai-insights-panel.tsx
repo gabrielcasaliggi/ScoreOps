@@ -60,8 +60,8 @@ export function AiInsightsPanel() {
     <Card className="animate-fade-in">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-violet-600 animate-sparkles" />
-          <CardTitle className="text-lg">Análisis inteligente</CardTitle>
+          <Sparkles className="h-5 w-5 text-slate-700 animate-sparkles" />
+          <CardTitle className="font-display text-lg font-bold tracking-tight">Análisis inteligente</CardTitle>
         </div>
         <CardDescription>
           {scope === "personal"
@@ -71,9 +71,9 @@ export function AiInsightsPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         {scope === "personal" && resumenSemanal && (
-          <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-4 animate-fade-in">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 animate-fade-in">
             <div className="mb-2 flex items-center gap-2">
-              <p className="text-sm font-semibold text-violet-900">Resumen de la semana</p>
+              <p className="text-sm font-semibold text-slate-900">Resumen de la semana</p>
               <Badge variant="outline" className="text-[10px]">
                 {resumenOrigen === "ollama" ? "IA local" : "Automático"}
               </Badge>
@@ -83,9 +83,9 @@ export function AiInsightsPanel() {
         )}
 
         {scope === "equipo" && resumenSemanal && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4 animate-fade-in">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 animate-fade-in">
             <div className="mb-2 flex items-center gap-2">
-              <p className="text-sm font-semibold text-blue-900">Resumen gerencial semanal</p>
+              <p className="text-sm font-semibold text-slate-900">Resumen gerencial semanal</p>
               <Badge variant="outline" className="text-[10px]">
                 {resumenOrigen === "ollama" ? "IA local" : "Automático"}
               </Badge>

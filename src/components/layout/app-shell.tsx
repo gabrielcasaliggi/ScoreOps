@@ -147,8 +147,8 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
       "relative flex items-center gap-2 rounded-lg font-medium transition-colors duration-200 shrink-0",
       compact ? "px-3 py-2 text-sm" : "px-3.5 py-2 text-sm",
       active
-        ? "bg-primary/10 text-primary after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary"
-        : "text-muted-foreground hover:bg-slate-100/80 hover:text-foreground"
+        ? "bg-slate-900 text-white shadow-sm"
+        : "text-muted-foreground hover:bg-slate-100/90 hover:text-foreground"
     );
   }
 
@@ -164,7 +164,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
       <span
         className={cn(
           "ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold",
-          active ? "bg-primary text-primary-foreground" : "bg-destructive text-white"
+          active ? "bg-white/20 text-white" : "bg-destructive text-white"
         )}
       >
         {value}
@@ -182,7 +182,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
           >
             <BrandIsotype size="sm" className="shrink-0" />
             <span className="hidden min-w-0 sm:block">
-              <span className="block truncate font-display text-[0.95rem] font-semibold leading-tight tracking-tight text-slate-900 lg:text-base">
+              <span className="block truncate font-display text-[0.95rem] font-bold leading-tight tracking-tight text-slate-900 lg:text-base">
                 {branding.name}
               </span>
               {branding.tagline ? (
@@ -265,7 +265,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                   "inline-flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-bold tracking-tight shadow-sm transition-all sm:px-3 sm:text-sm",
                   empresasActive
                     ? "bg-slate-900 text-white shadow-slate-900/25"
-                    : "bg-teal-600 text-white hover:bg-teal-700 hover:shadow-md"
+                    : "bg-slate-800 text-white hover:bg-slate-900 hover:shadow-md"
                 )}
                 title="Gestionar empresas"
               >
@@ -324,7 +324,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                   isEmpresas
                     ? active
                       ? "bg-slate-900 text-white"
-                      : "bg-teal-700 text-white"
+                      : "bg-slate-800 text-white"
                     : active
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground"

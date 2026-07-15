@@ -16,10 +16,19 @@ interface MetaColectiva {
   observacion: string | null;
 }
 
-const LABELS: Record<MetaColectiva["tipo"], string> = {
-  REPARACIONES: "c) Reparaciones — % resueltos mismo día",
-  PULSOS: "d) Pulsos — % vs semestre anterior",
-  COBRANZAS: "e) Cobranzas — % sobre facturación",
+const LABELS: Record<MetaColectiva["tipo"], { titulo: string; ayuda: string }> = {
+  REPARACIONES: {
+    titulo: "c) Reparaciones",
+    ayuda: "Meta típica: 95% de reclamos resueltos el mismo día.",
+  },
+  PULSOS: {
+    titulo: "d) Pulsos",
+    ayuda: "Meta típica: alcanzar o superar el 100% del semestre anterior.",
+  },
+  COBRANZAS: {
+    titulo: "e) Cobranzas",
+    ayuda: "Meta típica: cobrar al menos el 80% de lo facturado.",
+  },
 };
 
 export function MetasColectivasPanel({ isAdmin }: { isAdmin: boolean }) {
@@ -53,40 +62,50 @@ export function MetasColectivasPanel({ isAdmin }: { isAdmin: boolean }) {
     });
     setSaving(null);
     if (res.ok) {
-      setMessage("Metas colectivas actualizadas");
+      setMessage("Metas del equipo actualizadas");
     }
   }
 
   if (loading) return null;
 
   return (
-    <Card>
+    <Card className="border-slate-200 shadow-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-4 w-4" />
-          Metas colectivas Art. 49
+        <CardTitle className="font-display flex items-center gap-2 text-base font-bold tracking-tight">
+          <Target className="h-4 w-4 text-slate-700" />
+          Metas del equipo
         </CardTitle>
         <CardDescription>
-          Tramos c, d y e del premio semestral · {periodoLabel}
+          Cada meta cumplida suma 5% del sueldo a toda el área.
+          {periodoLabel ? ` · ${periodoLabel}` : ""}
           {!isAdmin && " · Solo lectura"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {metas.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Todavía no hay metas cargadas para este semestre.
+          </p>
+        )}
         {metas.map((meta) => {
           const cumplida = meta.valorActual >= meta.valorMeta;
+          const label = LABELS[meta.tipo];
           return (
-            <div key={meta.tipo} className="rounded-xl border p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">{LABELS[meta.tipo]}</p>
+            <div key={meta.tipo} className="space-y-3 rounded-xl border border-slate-200 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{label.titulo}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{label.ayuda}</p>
+                </div>
                 <span
-                  className={`text-xs font-semibold ${cumplida ? "text-emerald-600" : "text-amber-600"}`}
+                  className={`shrink-0 text-xs font-semibold ${cumplida ? "text-emerald-600" : "text-amber-600"}`}
                 >
-                  {cumplida ? "Cumplida" : "Pendiente"}
+                  {cumplida ? "Cumplida (+5%)" : "Pendiente"}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Meta (%)</Label>
+                  <Label className="text-xs">Objetivo (%)</Label>
                   <Input
                     type="number"
                     min={0}

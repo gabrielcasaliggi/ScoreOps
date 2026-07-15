@@ -66,6 +66,7 @@ async function main() {
         "logoUrl" TEXT,
         "primaryColor" TEXT,
         "activo" BOOLEAN NOT NULL DEFAULT true,
+        "premioHabilitado" BOOLEAN NOT NULL DEFAULT true,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "Organization_pkey" PRIMARY KEY ("id")
@@ -77,8 +78,19 @@ async function main() {
     console.log("Tabla Organization creada.");
   }
 
+  if (!(await columnExists("Organization", "premioHabilitado"))) {
+    await prisma.$executeRaw`
+      ALTER TABLE "Organization"
+      ADD COLUMN "premioHabilitado" BOOLEAN NOT NULL DEFAULT true
+    `;
+    console.log("Organization.premioHabilitado agregada.");
+  }
+
   let orgId: string;
-  const existingOrg = await prisma.organization.findUnique({ where: { slug: DEFAULT_SLUG } });
+  const existingOrgs = await prisma.$queryRaw<{ id: string; name: string; slug: string }[]>`
+    SELECT "id", "name", "slug" FROM "Organization" WHERE "slug" = ${DEFAULT_SLUG} LIMIT 1
+  `;
+  const existingOrg = existingOrgs[0];
 
   if (existingOrg) {
     orgId = existingOrg.id;
@@ -86,13 +98,14 @@ async function main() {
   } else {
     orgId = cuidLike();
     await prisma.$executeRaw`
-      INSERT INTO "Organization" ("id", "slug", "name", "tagline", "primaryColor", "activo", "createdAt", "updatedAt")
+      INSERT INTO "Organization" ("id", "slug", "name", "tagline", "primaryColor", "activo", "premioHabilitado", "createdAt", "updatedAt")
       VALUES (
         ${orgId},
         ${DEFAULT_SLUG},
         ${DEFAULT_NAME},
         ${"Puntajes, tareas y premio a la productividad"},
-        ${"#0f766e"},
+        ${"#1e3a5f"},
+        true,
         true,
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP

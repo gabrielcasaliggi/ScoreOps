@@ -29,31 +29,31 @@ export function formatMontoPremio(art49: PremioArt49): string {
 
 export const PREMIO_FORMULA_STEPS = [
   {
-    titulo: "a) Base — 30% individual",
+    titulo: "a) Base personal — 30%",
     texto:
-      "Tramo fijo del premio. Requiere antigüedad mínima de 6 meses al cierre del semestre.",
+      "Si al cierre del semestre tenés al menos 6 meses de antigüedad, entra este 30% del sueldo.",
   },
   {
-    titulo: "b) Asistencia perfecta — 5% individual",
+    titulo: "b) Buena asistencia — 5%",
     texto:
-      "Hasta 5 impuntualidades de hasta 5 minutos cada una. Vacaciones y accidentes de trabajo no penalizan. Sin sanciones ni faltas injustificadas.",
+      "Sin faltas injustificadas ni sanciones. Se toleran hasta 5 llegadas tarde de hasta 5 minutos. Vacaciones y accidentes de trabajo no restan.",
   },
   {
-    titulo: "c) Reparaciones — 5% colectivo",
-    texto: "95% de reclamos resueltos el mismo día en el semestre (meta de equipo).",
+    titulo: "c) Meta de equipo: reparaciones — 5%",
+    texto: "El equipo resuelve el 95% de los reclamos el mismo día en el semestre.",
   },
   {
-    titulo: "d) Pulsos — 5% colectivo",
-    texto: "100% o más respecto al semestre anterior (telecom).",
+    titulo: "d) Meta de equipo: pulsos — 5%",
+    texto: "El volumen de pulsos del semestre alcanza o supera el 100% del semestre anterior.",
   },
   {
-    titulo: "e) Cobranzas — 5% colectivo",
-    texto: "≥80% de cobranza sobre facturación del semestre.",
+    titulo: "e) Meta de equipo: cobranzas — 5%",
+    texto: "Se cobra al menos el 80% de lo facturado en el semestre.",
   },
   {
-    titulo: "Liquidación",
+    titulo: "¿Cuándo se paga?",
     texto:
-      "El premio total puede llegar al 50% del sueldo básico más antigüedad. S1 (ene–jun) se paga en septiembre; S2 (jul–dic) en marzo.",
+      "El máximo es 50% del sueldo básico + antigüedad. Lo trabajado de enero a junio se paga en septiembre; de julio a diciembre, en marzo.",
   },
 ] as const;
 

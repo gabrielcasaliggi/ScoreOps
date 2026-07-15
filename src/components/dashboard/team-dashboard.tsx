@@ -191,7 +191,7 @@ export function TeamDashboard({
                     <p className="text-xs text-amber-800">{p.motivo}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="tabular-nums text-sm font-semibold text-violet-600">
+                    <span className="tabular-nums text-sm font-semibold text-slate-800">
                       {p.premio}%
                     </span>
                     <Link href={`/dashboard/tareas?userId=${p.userId}`}>
@@ -228,26 +228,28 @@ export function TeamDashboard({
           variant="blue"
         />
         <StatCard
-          label="Premio Art. 49"
+          label="% premio del sueldo"
           value={`${resumen.puntajePremioPromedio ?? "—"}%`}
-          hint="Promedio del % del sueldo de referencia (máx. 50%)"
+          hint="Promedio del equipo (máximo posible: 50%)"
           icon={Award}
-          variant="violet"
+          variant="slate"
         />
       </div>
 
       <PremioFormulaExplainer compact />
 
       <Card className="dash-panel overflow-hidden border-0 shadow-none">
-        <CardHeader className="border-b border-violet-100/70 bg-gradient-to-r from-violet-50/70 via-white to-teal-50/30">
+        <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-blue-50/40">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
-              <Award className="h-5 w-5 text-violet-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+              <Award className="h-5 w-5 text-slate-700" />
             </div>
             <div>
-              <CardTitle className="text-lg">Ranking premio Art. 49</CardTitle>
+              <CardTitle className="font-display text-lg font-bold tracking-tight">
+                Quién va mejor (ranking)
+              </CardTitle>
               <CardDescription>
-                % del sueldo básico + antigüedad acumulado por persona (máx. 50%)
+                % del sueldo acumulado por persona (máx. 50%)
                 {periodoLabel ? ` · ${periodoLabel}` : ""}
               </CardDescription>
             </div>
@@ -297,14 +299,15 @@ export function TeamDashboard({
                         </p>
                         <div className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-black/5">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500"
+                            className="h-full rounded-full bg-slate-700 transition-all duration-500"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
                       </div>
                       <div className="text-right ml-auto">
-                        <p className="text-2xl font-bold text-violet-600 tabular-nums">
+                        <p className="text-2xl font-bold text-slate-800 tabular-nums">
                           {e.productivityBonus.puntajePremio}
+                          <span className="text-sm font-semibold text-muted-foreground">%</span>
                         </p>
                         <p className="text-[11px] text-muted-foreground max-w-xs">
                           {formatPremioResumen(e.productivityBonus)}
@@ -351,9 +354,9 @@ export function TeamDashboard({
 
         <Card className="dash-panel border-0 shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Premio Art. 49 por persona</CardTitle>
+            <CardTitle className="text-base">Premio % por persona</CardTitle>
             <CardDescription>
-              % del sueldo de referencia (escala 0–50), ordenado de mayor a menor
+              Cómo se reparte el % del sueldo (escala 0–50), de mayor a menor
             </CardDescription>
           </CardHeader>
           <CardContent className="chart-surface h-[22rem] pt-2">
@@ -455,7 +458,7 @@ export function TeamDashboard({
                   <th className="px-5 py-3 text-left">Área</th>
                   <th className="px-5 py-3 text-right">KPI</th>
                   <th className="px-5 py-3 text-right">Eficiencia</th>
-                  <th className="px-5 py-3 text-right" title="Tramos Art. 49 activos (a–e)">
+                  <th className="px-5 py-3 text-right" title="Tramos activos: a base, b asistencia, c–e metas de equipo">
                     Tramos a–e
                   </th>
                   <th className="px-5 py-3 text-right">Premio %</th>
@@ -489,7 +492,7 @@ export function TeamDashboard({
                             .join(" ")
                         : "—"}
                     </td>
-                    <td className="px-5 py-3.5 text-right font-bold text-violet-600 tabular-nums">
+                    <td className="px-5 py-3.5 text-right font-bold text-slate-800 tabular-nums">
                       {e.productivityBonus.puntajePremio}%
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-muted-foreground">

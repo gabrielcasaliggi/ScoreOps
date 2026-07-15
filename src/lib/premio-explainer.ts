@@ -42,7 +42,7 @@ export function explicarPremioArt49(
     const citas: PremioCitation[] = [
       cita(
         `${t.id}-pct`,
-        "Convenio Art. 49",
+        "Fórmula del premio",
         `Tramo ${t.id.toUpperCase()}: ${t.nombre}`,
         `${t.porcentajeSueldo}%`
       ),
@@ -50,7 +50,11 @@ export function explicarPremioArt49(
 
     if (tramoMeta?.alcance === "colectivo") {
       citas.push(
-        cita(`${t.id}-alcance`, "Art. 49", "Meta colectiva del semestre — depende del cumplimiento de toda la cooperativa")
+        cita(
+          `${t.id}-alcance`,
+          "Meta de equipo",
+          "Depende del cumplimiento de toda el área en el semestre"
+        )
       );
     }
 

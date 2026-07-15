@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #eef2f5;
+  --background: #eef2f6;
   --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #0f172a;
-  --primary: #0f766e;
+  --primary: #1e3a5f;
   --primary-foreground: #ffffff;
   --secondary: #e2e8f0;
   --secondary-foreground: #334155;
   --muted: #e8eef3;
   --muted-foreground: #64748b;
-  --accent: #ecfdf5;
-  --accent-foreground: #0f766e;
+  --accent: #eff6ff;
+  --accent-foreground: #1e3a5f;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #d8e0e8;
   --input: #d8e0e8;
-  --ring: #0f766e;
-  --chart-kpi: #0d9488;
+  --ring: #1e3a5f;
+  --chart-kpi: #2563eb;
   --chart-efficiency: #1d4ed8;
   --chart-premio: #b45309;
-  --chart-area: #0f766e;
+  --chart-area: #1e3a5f;
   --success: #059669;
   --warning: #d97706;
 }
@@ -44,8 +44,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-dm-sans);
-  --font-display: var(--font-source-serif);
+  --font-sans: var(--font-plus-jakarta);
+  --font-display: var(--font-plus-jakarta);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -63,15 +63,16 @@ body {
 }
 
 .font-display {
-  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.03em;
 }
 
-/* Fondo institucional: slate frío + acento teal */
+/* Fondo institucional: slate frío + acento navy */
 .app-mesh-bg {
   background-color: var(--background);
   background-image:
-    radial-gradient(ellipse 65% 50% at 6% -6%, rgba(15, 118, 110, 0.09), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 96% 2%, rgba(30, 58, 95, 0.07), transparent 50%),
+    radial-gradient(ellipse 65% 50% at 6% -6%, rgba(30, 58, 95, 0.08), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 96% 2%, rgba(37, 99, 235, 0.06), transparent 50%),
     radial-gradient(ellipse 40% 30% at 50% 100%, rgba(15, 23, 42, 0.04), transparent 55%);
 }
 
@@ -93,7 +94,7 @@ body {
 .hero-gradient {
   background:
     radial-gradient(ellipse 80% 120% at 100% 0%, rgba(255, 255, 255, 0.16), transparent 45%),
-    linear-gradient(135deg, #0f766e 0%, #134e4a 42%, #1e293b 100%);
+    linear-gradient(135deg, #1e3a5f 0%, #1e40af 45%, #0f172a 100%);
 }
 
 .login-panel {
@@ -187,7 +188,7 @@ body {
 
 .kanban-column--drag-over {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.14);
 }
 
 .kanban-card {
@@ -227,7 +228,7 @@ body {
 }
 
 .data-table tbody tr:hover {
-  background-color: rgba(15, 118, 110, 0.04);
+  background-color: rgba(30, 58, 95, 0.04);
 }
 
 /* Ranking podium */
@@ -290,7 +291,7 @@ body {
   50% {
     opacity: 0.85;
     transform: scale(1.06) rotate(4deg);
-    filter: drop-shadow(0 0 5px rgba(15, 118, 110, 0.35));
+    filter: drop-shadow(0 0 5px rgba(37, 99, 235, 0.35));
   }
 }
 

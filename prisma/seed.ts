@@ -17,7 +17,7 @@ async function main() {
       slug: ORG_SLUG,
       name: ORG_NAME,
       tagline: "Puntajes, tareas y premio a la productividad",
-      primaryColor: "#0f766e",
+      primaryColor: "#1e3a5f",
     },
   });
 

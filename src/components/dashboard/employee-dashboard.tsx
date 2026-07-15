@@ -132,9 +132,9 @@ export function EmployeeDashboard({
           <StatCard
             label="Premio semestral"
             value={`${puntajePremio}%`}
-            hint="Art. 49 — detalle abajo"
+            hint="Máx. 50% del sueldo — detalle abajo"
             icon={Award}
-            variant="violet"
+            variant="slate"
           />
         )}
       </div>
@@ -221,7 +221,7 @@ export function EmployeeDashboard({
                 label="Premio semestral"
                 value={`${comparacion.puntajePremio}%`}
                 hint={`${comparacion.deltaPremio >= 0 ? "+" : ""}${comparacion.deltaPremio} pp`}
-                variant={comparacion.deltaPremio >= 0 ? "violet" : "slate"}
+                variant={comparacion.deltaPremio >= 0 ? "emerald" : "slate"}
               />
             )}
             <StatCard
@@ -240,28 +240,31 @@ export function EmployeeDashboard({
       {premioHabilitado &&
         productivityBonus?.premioTemplate === "kpi_simple" &&
         !productivityBonus.art49 && (
-          <div className="rounded-2xl border border-violet-200/60 bg-violet-50/40 px-5 py-4">
-            <p className="font-semibold text-violet-900">Bono por KPI — {puntajePremio}%</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/50 px-5 py-4">
+            <p className="font-semibold text-slate-900">Tu bono por metas — {puntajePremio}%</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Calculado según cumplimiento KPI promedio del semestre.
+              Se calcula con el promedio de cumplimiento de tus KPIs en el semestre.
             </p>
           </div>
         )}
 
       {premioHabilitado && productivityBonus?.art49 && (
-        <details className="dash-panel open:pb-2">
+        <details className="dash-panel open:pb-2" open>
           <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-semibold text-slate-900">
             <span className="flex items-center gap-2">
-              <Award className="h-4 w-4 text-violet-600" />
-              Premio semestral Art. 49 ({puntajePremio}%)
+              <Award className="h-4 w-4 text-slate-700" />
+              Tu premio este semestre ({puntajePremio}%)
             </span>
             {periodo && (
               <span className="text-xs font-normal text-muted-foreground">
-                Pago {periodo.mesPagoLabel}
+                Cobrás en {periodo.mesPagoLabel}
               </span>
             )}
           </summary>
-          <div className="px-2 pb-2">
+          <div className="space-y-3 px-2 pb-2">
+            <p className="px-3 text-sm text-muted-foreground">
+              Sumá tramos personales y de equipo. El máximo es 50% del sueldo.
+            </p>
             <PremioArt49Breakdown art49={productivityBonus.art49} />
           </div>
         </details>

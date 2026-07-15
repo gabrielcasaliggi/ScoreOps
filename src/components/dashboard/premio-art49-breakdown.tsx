@@ -21,7 +21,7 @@ export function PremioArt49Breakdown({
             variant={t.activo ? "default" : "secondary"}
             className={cn(
               "text-[10px] font-mono",
-              t.activo && "bg-violet-600 hover:bg-violet-600"
+              t.activo && "bg-slate-800 hover:bg-slate-800"
             )}
           >
             {t.id}) {t.porcentajeSueldo}%
@@ -32,16 +32,19 @@ export function PremioArt49Breakdown({
   }
 
   return (
-    <Card className="glass-card border-violet-200/60">
+    <Card className="border-slate-200 shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center justify-between gap-2">
-          <span>Premio Art. 49 — {art49.porcentajeTotal}% del sueldo</span>
+        <CardTitle className="font-display flex items-center justify-between gap-2 text-base font-bold tracking-tight">
+          <span>Tu premio hoy: {art49.porcentajeTotal}% del sueldo</span>
           {art49.sueldoReferencia > 0 && (
-            <span className="text-sm font-semibold text-violet-700">
+            <span className="text-sm font-semibold text-slate-700">
               {formatMontoPremio(art49)}
             </span>
           )}
         </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Verde = ya lo sumás. Gris = todavía no; leé el motivo debajo.
+        </p>
       </CardHeader>
       <CardContent className="space-y-2">
         {!art49.elegible && (
@@ -56,22 +59,22 @@ export function PremioArt49Breakdown({
             )}
           >
             {t.activo ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
             ) : (
-              <Circle className="h-4 w-4 shrink-0 text-slate-400 mt-0.5" />
+              <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
             )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono font-semibold text-violet-800">{t.id})</span>
+                <span className="font-mono font-semibold text-slate-700">{t.id})</span>
                 <span className="font-medium">{t.nombre}</span>
                 <Badge variant="outline" className="text-[10px]">
                   {t.alcance === "colectivo" ? (
                     <>
-                      <Users className="h-3 w-3 mr-1" />
-                      Colectivo
+                      <Users className="mr-1 h-3 w-3" />
+                      Del equipo
                     </>
                   ) : (
-                    "Individual"
+                    "Personal"
                   )}
                 </Badge>
                 <span className="ml-auto font-semibold tabular-nums">{t.porcentajeSueldo}%</span>
@@ -82,8 +85,8 @@ export function PremioArt49Breakdown({
             </div>
           </div>
         ))}
-        <p className="text-xs text-muted-foreground pt-1">
-          Antigüedad: {art49.antiguedadMeses} meses · Impuntualidades leves:{" "}
+        <p className="pt-1 text-xs text-muted-foreground">
+          Antigüedad: {art49.antiguedadMeses} meses · Llegadas tarde leves:{" "}
           {art49.impuntualidadesLeves} · Faltas injustificadas:{" "}
           {art49.inasistenciasInjustificadas}
         </p>

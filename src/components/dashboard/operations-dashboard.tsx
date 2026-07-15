@@ -9,14 +9,12 @@ import {
   ClipboardList,
   RefreshCw,
   Target,
-  TrendingUp,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
@@ -129,34 +127,78 @@ export function OperationsDashboard({
   const roleLabel = isAdmin ? "ADMINISTRADOR" : "GERENTE";
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="dash-eyebrow">Operaciones</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+            Operaciones · {scopeLabel}
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-[2rem]">
             {isAdmin ? "Gestión operativa" : "Mi área"}
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
-            Una vista para decidir qué destrabar hoy ·{" "}
-            <span className="font-medium text-foreground">{scopeLabel}</span>
+          <p className="mt-1.5 max-w-xl text-sm text-slate-600">
+            Priorizá qué destrabar hoy: vencidas, aprobaciones y objetivos en riesgo.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={load}>
+          <Button variant="outline" size="sm" className="rounded-lg" onClick={load}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Actualizar
           </Button>
           <Link href="/dashboard/tareas">
-            <Button size="sm" className="rounded-xl shadow-md shadow-primary/20">
+            <Button size="sm" className="rounded-lg">
               <ClipboardList className="mr-2 h-4 w-4" />
               Abrir kanban
             </Button>
           </Link>
         </div>
+      </header>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          {
+            label: "Abiertas",
+            value: abiertas,
+            hint: `${data.resumen.tareasVencidas} vencidas`,
+            accent: data.resumen.tareasVencidas > 0 ? "bg-amber-500" : "bg-sky-600",
+          },
+          {
+            label: "Completadas",
+            value: data.resumen.tareasCompletadas,
+            hint: "en el período",
+            accent: "bg-blue-600",
+          },
+          {
+            label: "Objetivos",
+            value: data.resumen.objetivosActivos,
+            hint: `${data.resumen.objetivosEnRiesgo} en riesgo`,
+            accent: data.resumen.objetivosEnRiesgo > 0 ? "bg-amber-500" : "bg-slate-500",
+          },
+          {
+            label: "KPI equipo",
+            value: formatPercent(data.resumen.kpiPromedioEquipo),
+            hint: "promedio",
+            accent: "bg-slate-800",
+          },
+        ].map((m) => (
+          <div
+            key={m.label}
+            className="relative overflow-hidden rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm"
+          >
+            <div className={`absolute inset-y-0 left-0 w-1 ${m.accent}`} />
+            <p className="pl-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {m.label}
+            </p>
+            <p className="mt-1 pl-2 font-display text-2xl font-bold tabular-nums tracking-tight text-slate-900">
+              {m.value}
+            </p>
+            <p className="mt-1 pl-2 text-xs text-slate-500">{m.hint}</p>
+          </div>
+        ))}
       </div>
 
       {tieneFoco && (
-        <div className="dash-focus-strip flex flex-wrap items-center gap-2 px-4 py-3.5 text-sm">
+        <div className="dash-focus-strip flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
           <span className="font-semibold text-amber-950">Foco hoy</span>
           {porAprobar > 0 && (
             <Link
@@ -185,61 +227,32 @@ export function OperationsDashboard({
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 animate-stagger">
-        <StatCard
-          label="Tareas abiertas"
-          value={abiertas}
-          hint={`${data.resumen.tareasVencidas} vencida(s)`}
-          icon={ClipboardList}
-          variant={data.resumen.tareasVencidas > 0 ? "amber" : "blue"}
-        />
-        <StatCard
-          label="Completadas"
-          value={data.resumen.tareasCompletadas}
-          icon={CheckCircle2}
-          variant="emerald"
-        />
-        <StatCard
-          label="Objetivos activos"
-          value={data.resumen.objetivosActivos}
-          hint={`${data.resumen.objetivosEnRiesgo} en riesgo`}
-          icon={Target}
-          variant={data.resumen.objetivosEnRiesgo > 0 ? "amber" : "slate"}
-        />
-        <StatCard
-          label="KPI equipo"
-          value={formatPercent(data.resumen.kpiPromedioEquipo)}
-          icon={TrendingUp}
-          variant="emerald"
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="dash-panel border-0 shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="overflow-hidden border-slate-200/90 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
+            <CardTitle className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
                 <AlertTriangle className="h-4 w-4" />
               </span>
               Tareas prioritarias
             </CardTitle>
             <CardDescription>Vencidas o alta prioridad — clic para abrir</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2.5">
+          <CardContent className="space-y-2.5 pt-4">
             {data.tareasUrgentes.length === 0 ? (
               <EmptyState
+                compact
                 icon={CheckCircle2}
                 tone="success"
                 title="Sin urgencias"
                 description="No hay tareas vencidas ni de alta prioridad en el alcance actual."
-                className="py-8"
               />
             ) : (
               data.tareasUrgentes.map((t) => (
                 <Link
                   key={t.id}
                   href={`/dashboard/tareas?userId=${t.userId}${t.vencida ? "&vencidas=1" : ""}`}
-                  className="group flex items-start justify-between gap-3 rounded-xl border border-transparent bg-white/70 px-3.5 py-3 text-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md"
+                  className="group flex items-start justify-between gap-3 rounded-xl border border-transparent bg-white px-3.5 py-3 text-sm ring-1 ring-slate-200/80 transition hover:border-amber-200 hover:shadow-md"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium group-hover:text-amber-950">{t.titulo}</p>
@@ -265,28 +278,28 @@ export function OperationsDashboard({
           </CardContent>
         </Card>
 
-        <Card className="dash-panel border-0 shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+        <Card className="overflow-hidden border-slate-200/90 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
+            <CardTitle className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                 <Target className="h-4 w-4" />
               </span>
               Objetivos en seguimiento
             </CardTitle>
             <CardDescription>KPI bajo o vencimiento próximo</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             {data.objetivosRiesgo.length === 0 ? (
               <EmptyState
+                compact
                 icon={Target}
                 tone="success"
                 title="Objetivos al día"
                 description="Ningún objetivo del alcance está en riesgo por ahora."
-                className="py-8"
               />
             ) : (
               data.objetivosRiesgo.map((o) => (
-                <div key={o.id} className="space-y-2 rounded-xl bg-white/60 p-3 ring-1 ring-slate-200/70">
+                <div key={o.id} className="space-y-2 rounded-xl bg-white p-3 ring-1 ring-slate-200/70">
                   <div className="flex justify-between gap-2 text-sm">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{o.titulo}</p>
@@ -301,7 +314,7 @@ export function OperationsDashboard({
                   </div>
                   <Progress value={o.kpiPromedio} className="h-2" />
                   <div className="flex justify-between text-xs">
-                    <span className="font-medium text-teal-700">
+                    <span className="font-medium text-slate-700">
                       {formatPercent(o.kpiPromedio)}
                     </span>
                     {o.proximoVencer && (
@@ -415,15 +428,15 @@ export function OperationsDashboard({
       </Card>
 
       {premioHabilitado && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-200/50 bg-gradient-to-r from-teal-50/80 to-indigo-50/40 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 px-5 py-4">
           <div>
-            <p className="font-semibold text-slate-900">Premio semestral Art. 49</p>
+            <p className="font-display font-bold tracking-tight text-slate-900">Premio semestral</p>
             <p className="text-sm text-muted-foreground">
-              Liquidación, tramos y metas colectivas en módulo aparte
+              Fórmula, metas del equipo y ranking — pensado para gerentes
             </p>
           </div>
           <Link href="/dashboard/premio">
-            <Button variant="outline" className="rounded-xl border-teal-200 bg-white/90">
+            <Button variant="outline" className="rounded-xl border-slate-200 bg-white">
               Ir a Premio
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

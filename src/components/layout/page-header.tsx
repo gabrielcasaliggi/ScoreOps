@@ -17,7 +17,7 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       )}
     >
       <div className="min-w-0 flex-1">
-        <div className="font-display text-2xl font-semibold tracking-tight text-slate-900 [&_h1]:font-display [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:tracking-tight">
+        <div className="font-display text-2xl font-bold tracking-tight text-slate-900 [&_h1]:font-display [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:tracking-tight">
           {title}
         </div>
         {description ? (

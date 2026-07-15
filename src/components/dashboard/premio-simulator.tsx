@@ -47,58 +47,72 @@ export function PremioSimulator() {
   }
 
   return (
-    <Card className="glass-card">
+    <Card className="border-slate-200 shadow-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <FlaskConical className="h-4 w-4 text-violet-600" />
-          Simulador de premio
+        <CardTitle className="font-display flex items-center gap-2 text-base font-bold tracking-tight">
+          <FlaskConical className="h-4 w-4 text-slate-700" />
+          ¿Y si mejoramos KPI y eficiencia?
         </CardTitle>
         <CardDescription>
-          Probá escenarios de KPI y eficiencia antes del cierre del semestre
+          Esta prueba mira solo el puntaje de gestión interna (KPI + eficiencia). El premio
+          legal del 50% también depende de asistencia y metas de equipo.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>KPI promedio (%)</Label>
+            <Label>Cumplimiento de KPI (%)</Label>
             <Input
               type="number"
               min={0}
               max={200}
-              className="rounded-xl"
+              className="rounded-lg"
               value={kpi}
               onChange={(e) => setKpi(e.target.value)}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Promedio de avance de objetivos medibles.
+            </p>
           </div>
           <div className="space-y-2">
-            <Label>Eficiencia evaluable (%)</Label>
+            <Label>Eficiencia en tareas (%)</Label>
             <Input
               type="number"
               min={0}
               max={200}
-              className="rounded-xl"
+              className="rounded-lg"
               value={eficiencia}
               onChange={(e) => setEficiencia(e.target.value)}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Qué tan a tiempo se completan las tareas evaluables.
+            </p>
           </div>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <Button onClick={simular} disabled={loading} className="rounded-xl">
+        <Button onClick={simular} disabled={loading} className="rounded-lg">
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Simular escenario
+          Probar escenario
         </Button>
         {result && (
-          <div className="rounded-xl border bg-violet-50/40 p-4 space-y-2 text-sm">
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
             <p>
-              Premio actual (Art. 49):{" "}
+              Premio actual (asistencia + metas incluidas):{" "}
               <strong>{result.actual.puntajePremio}%</strong>
             </p>
             <p>
               Con KPI {result.simulado.kpiPromedio}% y eficiencia{" "}
               {result.simulado.eficienciaEvaluable}% → gestión interna{" "}
               <strong>{result.simulado.puntajeGestionInterna}%</strong>
+              {result.delta !== 0 && (
+                <span className="text-muted-foreground">
+                  {" "}
+                  ({result.delta > 0 ? "+" : ""}
+                  {result.delta} pp vs gestión interna actual)
+                </span>
+              )}
             </p>
-            <p className="text-muted-foreground text-xs">{result.nota}</p>
+            <p className="text-xs text-muted-foreground">{result.nota}</p>
           </div>
         )}
       </CardContent>

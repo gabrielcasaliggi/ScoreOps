@@ -7,7 +7,7 @@ export const CHART = {
   efficiencyLight: "#93c5fd",
   premio: "#7c3aed",
   premioLight: "#c4b5fd",
-  area: "#0f766e",
+  area: "#1e3a5f",
   grid: "rgba(148, 163, 184, 0.28)",
   muted: "#64748b",
   cursor: "rgba(15, 23, 42, 0.04)",

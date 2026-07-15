@@ -100,7 +100,7 @@ export function LoginForm() {
         style={{ animationDelay: "120ms" }}
       >
         <CardHeader className="text-center">
-          <CardTitle className="font-display text-2xl font-semibold">Recuperar acceso</CardTitle>
+          <CardTitle className="font-display text-2xl font-bold tracking-tight">Recuperar acceso</CardTitle>
           <CardDescription>
             Se notificará a un administrador para restablecer tu contraseña
           </CardDescription>
@@ -157,7 +157,7 @@ export function LoginForm() {
       style={{ animationDelay: "120ms" }}
     >
       <CardHeader className="text-center pb-2">
-        <CardTitle className="font-display text-2xl font-semibold tracking-tight">
+        <CardTitle className="font-display text-2xl font-bold tracking-tight">
           Ingresar
         </CardTitle>
         <CardDescription>

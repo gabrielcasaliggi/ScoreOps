@@ -56,17 +56,17 @@ export function PremioExplainerPanel() {
   if (!data) return null;
 
   return (
-    <Card className="border-violet-200/60">
+    <Card className="border-slate-200 shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <HelpCircle className="h-4 w-4 text-violet-600" />
+            <CardTitle className="font-display flex items-center gap-2 text-base font-bold tracking-tight">
+              <HelpCircle className="h-4 w-4 text-slate-700" />
               {data.titulo}
             </CardTitle>
             <CardDescription className="mt-1">{data.resumen}</CardDescription>
           </div>
-          <Badge variant="outline" className="shrink-0 text-violet-700 border-violet-200">
+          <Badge variant="outline" className="shrink-0 border-slate-200 text-slate-800">
             {data.porcentajeTotal}%
           </Badge>
         </div>
@@ -94,7 +94,7 @@ export function PremioExplainerPanel() {
                     {paso.citas.map((c) => (
                       <span
                         key={c.id}
-                        className="inline-flex items-center gap-1 rounded-md bg-white/80 px-2 py-0.5 text-[10px] text-violet-800 border border-violet-100"
+                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white/80 px-2 py-0.5 text-[10px] text-slate-800"
                         title={c.texto}
                       >
                         <BookOpen className="h-3 w-3" />
@@ -112,7 +112,7 @@ export function PremioExplainerPanel() {
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="flex w-full items-center gap-2 text-xs font-medium text-violet-700 hover:text-violet-900"
+          className="flex w-full items-center gap-2 text-xs font-medium text-slate-700 hover:text-slate-900"
         >
           <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
           {open ? "Ocultar" : "Ver"} fuentes y recomendaciones
@@ -121,8 +121,8 @@ export function PremioExplainerPanel() {
         {open && (
           <div className="space-y-3 animate-fade-in">
             {data.citasGenerales.length > 0 && (
-              <div className="rounded-lg bg-violet-50/50 p-3 text-xs space-y-1">
-                <p className="font-semibold text-violet-900">Fuentes del cálculo</p>
+              <div className="space-y-1 rounded-lg bg-slate-50 p-3 text-xs">
+                <p className="font-semibold text-slate-900">De dónde sale el número</p>
                 {data.citasGenerales.map((c) => (
                   <p key={c.id} className="text-muted-foreground">
                     <span className="font-medium text-foreground">{c.fuente}:</span> {c.texto}

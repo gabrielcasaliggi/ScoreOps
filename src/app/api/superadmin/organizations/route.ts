@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
             (data.premioHabilitado
               ? "Puntajes, tareas y premio a la productividad"
               : "Gestión de tareas, objetivos y KPIs"),
-          primaryColor: data.primaryColor ?? "#0f766e",
+          primaryColor: data.primaryColor ?? "#1e3a5f",
           premioHabilitado: data.premioHabilitado,
         },
       });
