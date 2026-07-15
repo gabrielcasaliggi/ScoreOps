@@ -72,6 +72,8 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   const showEmpresas = isAdmin && isSuperAdmin;
 
+  // Primaria corta: caben en laptops sin cortar "Ejecutivo"/Más.
+  // Aprobaciones y Ejecutivo van a Más (con badge en el trigger si hay pendientes).
   const primaryNav: NavItem[] = isManager
     ? [
         { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
@@ -84,15 +86,6 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
         },
         ...(premioOn
           ? [{ href: "/dashboard/premio", label: "Premio", icon: Award }]
-          : []),
-        {
-          href: "/dashboard/aprobaciones",
-          label: isManager ? "Aprobaciones" : "Mis solicitudes",
-          icon: ClipboardCheck,
-          badgeKey: "aprobaciones" as const,
-        },
-        ...(isAdmin
-          ? [{ href: "/dashboard/ejecutivo", label: "Ejecutivo", icon: BarChart3 }]
           : []),
       ]
     : [
@@ -113,6 +106,15 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
 
   const moreNav: NavItem[] = isManager
     ? [
+        {
+          href: "/dashboard/aprobaciones",
+          label: "Aprobaciones",
+          icon: ClipboardCheck,
+          badgeKey: "aprobaciones" as const,
+        },
+        ...(isAdmin
+          ? [{ href: "/dashboard/ejecutivo", label: "Ejecutivo", icon: BarChart3 }]
+          : []),
         { href: "/dashboard/asistencia", label: "Asistencia", icon: CalendarClock },
         { href: "/dashboard/evaluaciones", label: "Evaluaciones", icon: Star },
         ...(isAdmin
@@ -175,65 +177,72 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
   return (
     <div className="min-h-screen app-mesh-bg">
       <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-[#f8fafb]/95 backdrop-blur-md">
-        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-4 sm:gap-3 sm:px-6">
+        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 sm:gap-3 sm:px-6">
           <Link
             href="/dashboard"
-            className="group flex max-w-[11rem] shrink-0 items-center gap-2.5 sm:max-w-[14rem]"
+            className="group flex max-w-[9.5rem] shrink-0 items-center gap-2 sm:max-w-[12rem] xl:max-w-[14rem]"
+            title={branding.tagline ? `${branding.name} — ${branding.tagline}` : branding.name}
           >
             <BrandIsotype size="sm" className="shrink-0" />
             <span className="hidden min-w-0 sm:block">
-              <span className="block truncate font-display text-[0.95rem] font-bold leading-tight tracking-tight text-slate-900 lg:text-base">
+              <span className="block truncate font-display text-[0.9rem] font-bold leading-tight tracking-tight text-slate-900 xl:text-base">
                 {branding.name}
               </span>
-              {branding.tagline ? (
-                <span className="mt-0.5 hidden truncate text-[10px] text-muted-foreground xl:block">
-                  {branding.tagline}
-                </span>
-              ) : null}
             </span>
           </Link>
 
-          <nav className="hidden min-w-0 items-center justify-center gap-0.5 overflow-x-auto scrollbar-none md:flex lg:gap-1">
-            {primaryNav.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
-              const badge = badgeFor(item);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(navLinkClass(active, true), "group")}
-                  title={item.label}
-                >
-                  <Icon className={cn("h-4 w-4 shrink-0 icon-hover-pop", active && "nav-icon-active")} />
-                  <span className="hidden whitespace-nowrap lg:inline">{item.label}</span>
-                  {badge && <NavBadge value={badge} active={active} />}
-                </Link>
-              );
-            })}
+          <nav className="hidden min-w-0 items-center gap-0.5 md:flex lg:gap-1">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5 overflow-x-auto scrollbar-none lg:justify-center lg:gap-1">
+              {primaryNav.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href;
+                const badge = badgeFor(item);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(navLinkClass(active, true), "group")}
+                    title={item.label}
+                  >
+                    <Icon
+                      className={cn("h-4 w-4 shrink-0 icon-hover-pop", active && "nav-icon-active")}
+                    />
+                    <span className="hidden whitespace-nowrap xl:inline">{item.label}</span>
+                    {badge && <NavBadge value={badge} active={active} />}
+                  </Link>
+                );
+              })}
+            </div>
 
             {moreNav.length > 0 && (
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button
                     type="button"
-                    className={navLinkClass(moreNavActive, true)}
+                    className={cn(navLinkClass(moreNavActive, true), "relative shrink-0")}
                     aria-label="Más secciones"
                   >
                     <MoreHorizontal className="h-4 w-4 shrink-0" />
-                    <span className="hidden whitespace-nowrap lg:inline">Más</span>
+                    <span className="hidden whitespace-nowrap xl:inline">Más</span>
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                    {aprobacionesPendientes > 0 &&
+                      moreNav.some((i) => i.badgeKey === "aprobaciones") && (
+                        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                          {aprobacionesPendientes > 9 ? "9+" : aprobacionesPendientes}
+                        </span>
+                      )}
                   </button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content
-                    className="z-50 min-w-[11rem] rounded-xl border bg-white p-1.5 shadow-lg"
+                    className="z-50 min-w-[12rem] rounded-xl border bg-white p-1.5 shadow-lg"
                     sideOffset={6}
                     align="end"
                   >
                     {moreNav.map((item) => {
                       const Icon = item.icon;
                       const active = pathname === item.href;
+                      const badge = badgeFor(item);
                       return (
                         <DropdownMenu.Item key={item.href} asChild>
                           <Link
@@ -241,12 +250,22 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                             className={cn(
                               "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none",
                               active
-                                ? "bg-primary/10 font-medium text-primary"
+                                ? "bg-slate-900 font-medium text-white"
                                 : "text-foreground hover:bg-muted"
                             )}
                           >
-                            <Icon className="h-4 w-4" />
-                            {item.label}
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <span className="flex-1">{item.label}</span>
+                            {badge && (
+                              <span
+                                className={cn(
+                                  "flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                                  active ? "bg-white/20 text-white" : "bg-destructive text-white"
+                                )}
+                              >
+                                {badge}
+                              </span>
+                            )}
                           </Link>
                         </DropdownMenu.Item>
                       );
@@ -257,7 +276,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
             )}
           </nav>
 
-          <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1.5">
+          <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             {showEmpresas && (
               <Link
                 href="/dashboard/superadmin"
@@ -270,7 +289,7 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                 title="Gestionar empresas"
               >
                 <Shield className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-                <span>Empresas</span>
+                <span className="hidden sm:inline">Empresas</span>
               </Link>
             )}
             <NotificationBell />
@@ -284,17 +303,12 @@ export function AppShell({ user, branding, isSuperAdmin = false, children }: App
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
-            <div className="hidden items-center gap-2 border-l border-border/60 pl-2 md:flex lg:pl-3">
+            <div
+              className="hidden items-center gap-2 border-l border-border/60 pl-2 md:flex lg:pl-3"
+              title={`${user.nombre} ${user.apellido} · ${user.role.replace("_", " ")} · ${user.areaNombre}`}
+            >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary ring-2 ring-white">
                 {getInitials(user.nombre, user.apellido)}
-              </div>
-              <div className="hidden text-right text-sm leading-tight 2xl:block">
-                <p className="font-semibold">
-                  {user.nombre} {user.apellido}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {user.role.replace("_", " ")} · {user.areaNombre}
-                </p>
               </div>
             </div>
             <Button
