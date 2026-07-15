@@ -66,6 +66,13 @@ export async function findUserInOrg(organizationId: string, userId: string) {
   });
 }
 
+export async function findAreaInOrg(organizationId: string, areaId: string) {
+  return prisma.area.findFirst({
+    where: { id: areaId, organizationId },
+    select: { id: true, nombre: true, organizationId: true },
+  });
+}
+
 export async function findTareaInOrg(organizationId: string, tareaId: string) {
   return prisma.tarea.findFirst({
     where: { id: tareaId, user: { organizationId } },

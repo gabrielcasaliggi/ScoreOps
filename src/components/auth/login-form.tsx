@@ -31,7 +31,7 @@ export function LoginForm() {
         body: JSON.stringify({
           email,
           password,
-          ...(orgSlug.trim() ? { orgSlug: orgSlug.trim() } : {}),
+          orgSlug: orgSlug.trim(),
         }),
       });
 
@@ -112,7 +112,7 @@ export function LoginForm() {
       <CardHeader className="text-center pb-2">
         <CardTitle className="text-2xl font-bold">Ingresar a {BRAND.name}</CardTitle>
         <CardDescription>
-          Ingresá con tu cuenta de la cooperativa
+          Ingresá con tu cuenta y el código de la empresa
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -129,14 +129,19 @@ export function LoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="orgSlug">Cooperativa (opcional)</Label>
+            <Label htmlFor="orgSlug">Empresa (código)</Label>
             <Input
               id="orgSlug"
-              placeholder="demo — dejar vacío si es la predeterminada"
+              placeholder="ej. demo, acme, vertia"
               value={orgSlug}
               onChange={(e) => setOrgSlug(e.target.value)}
               autoComplete="organization"
+              required
             />
+            <p className="text-[11px] text-muted-foreground">
+              Obligatorio. Cada empresa tiene su propio código; sin él no se puede
+              mezclar datos entre tenants.
+            </p>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">

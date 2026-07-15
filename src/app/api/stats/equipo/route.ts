@@ -7,6 +7,7 @@ import {
   type ProductivityPeriod,
 } from "@/lib/productivity-period";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
+import { findAreaInOrg } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   const { error, user } = await requireAuth(["ADMINISTRADOR", "GERENTE"]);
@@ -28,7 +29,9 @@ export async function GET(request: NextRequest) {
     if (user.role === "GERENTE") {
       empleadoWhere.areaId = user.areaId;
     } else if (areaIdParam) {
-      empleadoWhere.areaId = areaIdParam;
+      const area = await findAreaInOrg(user.organizationId, areaIdParam);
+      if (!area) return apiError("Área no encontrada en tu empresa", 404);
+      empleadoWhere.areaId = area.id;
     }
 
     const [empleados, areas] = await Promise.all([

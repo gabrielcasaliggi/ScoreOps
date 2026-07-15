@@ -16,6 +16,8 @@ export interface SessionUser {
   areaId: string;
   areaNombre: string;
   organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
   premioHabilitado: boolean;
 }
 
@@ -66,8 +68,12 @@ function parseSessionToken(token: string): string | null {
 
 export function toSessionUser(
   user: User & {
-    area: { nombre: string };
-    organization?: { premioHabilitado: boolean } | null;
+    area: { nombre: string; organizationId: string };
+    organization?: {
+      name: string;
+      slug: string;
+      premioHabilitado: boolean;
+    } | null;
   }
 ): SessionUser {
   return {
@@ -79,6 +85,8 @@ export function toSessionUser(
     areaId: user.areaId,
     areaNombre: user.area.nombre,
     organizationId: user.organizationId,
+    organizationName: user.organization?.name ?? "",
+    organizationSlug: user.organization?.slug ?? "",
     premioHabilitado: user.organization?.premioHabilitado ?? true,
   };
 }
@@ -144,12 +152,23 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      area: true,
-      organization: { select: { premioHabilitado: true } },
+      area: { select: { nombre: true, organizationId: true } },
+      organization: {
+        select: { name: true, slug: true, premioHabilitado: true },
+      },
     },
   });
 
   if (!user || !user.activo) return null;
+
+  // Blindaje: área de otra empresa = sesión inválida (datos corruptos / fuga)
+  if (user.area.organizationId !== user.organizationId) {
+    console.error(
+      `[Auth] Usuario ${user.id} con areaId fuera de su organizationId (${user.organizationId})`
+    );
+    return null;
+  }
+
   return toSessionUser(user);
 }
 

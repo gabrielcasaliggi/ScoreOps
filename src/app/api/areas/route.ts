@@ -26,7 +26,12 @@ export async function GET() {
     select: {
       id: true,
       nombre: true,
-      _count: { select: { usuarios: true } },
+      _count: {
+        select: {
+          // Solo usuarios de esta empresa (evita conteo cruzado si hay FK rota)
+          usuarios: { where: { organizationId: orgId(user) } },
+        },
+      },
     },
   });
 
@@ -35,6 +40,7 @@ export async function GET() {
       id: a.id,
       nombre: a.nombre,
       usuarios: a._count.usuarios,
+      organizationId: orgId(user),
     }))
   );
 }

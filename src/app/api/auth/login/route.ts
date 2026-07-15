@@ -16,12 +16,11 @@ import {
   recordLoginAttempt,
 } from "@/lib/login-security";
 
-import { DEFAULT_ORG_SLUG } from "@/lib/tenant";
-
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  orgSlug: z.string().optional(),
+  /** Obligatorio: sin slug no se asume otra empresa por defecto. */
+  orgSlug: z.string().min(1, "Indicá el código de empresa"),
 });
 
 export async function POST(request: NextRequest) {
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
     const parsed = loginSchema.safeParse(body);
 
     if (!parsed.success) {
-      return apiError("Credenciales inválidas");
+      return apiError(parsed.error.issues[0]?.message ?? "Credenciales inválidas");
     }
 
     const ip =
@@ -43,11 +42,12 @@ export async function POST(request: NextRequest) {
       return apiError(`${getLockoutMessage()} (${mins} min restantes)`, 429);
     }
 
+    const orgSlug = parsed.data.orgSlug.trim().toLowerCase();
     const org = await prisma.organization.findUnique({
-      where: { slug: parsed.data.orgSlug ?? DEFAULT_ORG_SLUG },
+      where: { slug: orgSlug },
     });
     if (!org || !org.activo) {
-      return apiError("Organización no encontrada", 404);
+      return apiError("Empresa no encontrada. Revisá el código (slug).", 404);
     }
 
     const user = await prisma.user.findUnique({
@@ -58,8 +58,10 @@ export async function POST(request: NextRequest) {
         },
       },
       include: {
-        area: true,
-        organization: { select: { premioHabilitado: true } },
+        area: { select: { nombre: true, organizationId: true } },
+        organization: {
+          select: { name: true, slug: true, premioHabilitado: true },
+        },
       },
     });
 
@@ -71,6 +73,16 @@ export async function POST(request: NextRequest) {
     if (!user.activo) {
       await recordLoginAttempt(parsed.data.email, false, ip);
       return apiError("Cuenta desactivada. Contactá al administrador.", 403);
+    }
+
+    if (user.area.organizationId !== user.organizationId) {
+      console.error(
+        `[Auth] Login bloqueado: ${user.email} tiene área de otra empresa`
+      );
+      return apiError(
+        "Tu usuario tiene un área asignada fuera de esta empresa. Contactá a soporte.",
+        403
+      );
     }
 
     const valid = await bcrypt.compare(parsed.data.password, user.password);

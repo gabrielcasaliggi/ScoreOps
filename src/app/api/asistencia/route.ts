@@ -11,6 +11,7 @@ import {
   parseAsistenciaImportRows,
   type AsistenciaImportFormato,
 } from "@/lib/asistencia-import";
+import { findAreaInOrg } from "@/lib/tenant";
 
 const createSchema = z.object({
   userId: z.string().min(1),
@@ -47,7 +48,9 @@ export async function GET(request: NextRequest) {
   if (user.role === "GERENTE") {
     where.user = { organizationId: user.organizationId, areaId: user.areaId };
   } else if (areaId) {
-    where.user = { organizationId: user.organizationId, areaId };
+    const area = await findAreaInOrg(user.organizationId, areaId);
+    if (!area) return apiError("Área no encontrada en tu empresa", 404);
+    where.user = { organizationId: user.organizationId, areaId: area.id };
   }
 
   const registros = await prisma.asistenciaRegistro.findMany({

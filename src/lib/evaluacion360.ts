@@ -108,10 +108,23 @@ export async function getPendingAssignments(
   evaluadorId: string,
   cicloId: string
 ): Promise<EvaluacionAssignment[]> {
-  const [evaluador, usuarios, respuestas] = await Promise.all([
-    prisma.user.findUnique({ where: { id: evaluadorId } }),
+  const evaluador = await prisma.user.findUnique({
+    where: { id: evaluadorId },
+    select: {
+      id: true,
+      nombre: true,
+      apellido: true,
+      role: true,
+      areaId: true,
+      activo: true,
+      organizationId: true,
+    },
+  });
+  if (!evaluador) return [];
+
+  const [usuarios, respuestas] = await Promise.all([
     prisma.user.findMany({
-      where: { activo: true },
+      where: { activo: true, organizationId: evaluador.organizationId },
       select: { id: true, nombre: true, apellido: true, role: true, areaId: true, activo: true },
     }),
     prisma.evaluacion360Respuesta.findMany({
@@ -119,8 +132,6 @@ export async function getPendingAssignments(
       select: { evaluadoId: true, rol: true, competencia: true },
     }),
   ]);
-
-  if (!evaluador) return [];
 
   const empleados = usuarios.filter((u) => u.role === "EMPLEADO" || u.role === "GERENTE");
   const gerentes = usuarios.filter((u) => u.role === "GERENTE" || u.role === "ADMINISTRADOR");

@@ -80,11 +80,17 @@ export default function EmpleadosPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [orgName, setOrgName] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((data) => setAuthorized(data.user?.role === "ADMINISTRADOR"));
+      .then((data) => {
+        setAuthorized(data.user?.role === "ADMINISTRADOR");
+        setOrgName(data.user?.organizationName ?? "");
+        setOrgSlug(data.user?.organizationSlug ?? "");
+      });
   }, []);
 
   const load = useCallback(async () => {
@@ -282,7 +288,12 @@ export default function EmpleadosPage() {
         </CardContent>
       </Card>
 
-      <AreasManager areas={areas} onChanged={load} />
+      <AreasManager
+        areas={areas}
+        onChanged={load}
+        organizationName={orgName}
+        organizationSlug={orgSlug}
+      />
 
       <div className="overflow-x-auto rounded-xl border bg-white/80">
         <table className="w-full min-w-[720px] text-sm">

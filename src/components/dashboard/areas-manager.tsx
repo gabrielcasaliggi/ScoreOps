@@ -17,9 +17,16 @@ export interface AreaRow {
 interface AreasManagerProps {
   areas: AreaRow[];
   onChanged: () => void;
+  organizationName?: string;
+  organizationSlug?: string;
 }
 
-export function AreasManager({ areas, onChanged }: AreasManagerProps) {
+export function AreasManager({
+  areas,
+  onChanged,
+  organizationName,
+  organizationSlug,
+}: AreasManagerProps) {
   const [nombre, setNombre] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNombre, setEditNombre] = useState("");
@@ -89,8 +96,17 @@ export function AreasManager({ areas, onChanged }: AreasManagerProps) {
           Áreas de la empresa
         </CardTitle>
         <CardDescription>
-          Definí sectores/departamentos antes de cargar empleados. El administrador puede crear
-          todas las que necesite.
+          Definí sectores/departamentos de{" "}
+          <strong className="text-foreground">
+            {organizationName ?? "tu empresa"}
+          </strong>
+          {organizationSlug ? (
+            <span className="text-muted-foreground">
+              {" "}
+              (código <code className="text-xs">{organizationSlug}</code>)
+            </span>
+          ) : null}
+          . Solo existen dentro de esta empresa; no se comparten con otras.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

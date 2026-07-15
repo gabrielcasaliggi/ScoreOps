@@ -4,6 +4,7 @@ import type { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { createUserSchema } from "@/lib/user-validation";
+import { findAreaInOrg } from "@/lib/tenant";
 
 const userSelect = {
   id: true,
@@ -38,7 +39,11 @@ export async function GET(request: NextRequest) {
   } else if (user.role === "ADMINISTRADOR") {
     const role = searchParams.get("role") as Role | null;
     if (role) where.role = role;
-    if (areaId) where.areaId = areaId;
+    if (areaId) {
+      const area = await findAreaInOrg(user.organizationId, areaId);
+      if (!area) return apiError("Área no encontrada en tu empresa", 404);
+      where.areaId = area.id;
+    }
   }
 
   if (activoParam === "true") where.activo = true;

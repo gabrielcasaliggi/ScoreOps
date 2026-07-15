@@ -8,6 +8,7 @@ import {
 } from "@/lib/productivity-period";
 import { apiError, apiSuccess } from "@/lib/api";
 import { requireApiKey } from "@/lib/api-v1-auth";
+import { findAreaInOrg } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   const { error, ctx } = await requireApiKey(request, ["stats:read"]);
@@ -24,7 +25,11 @@ export async function GET(request: NextRequest) {
       activo: true,
       organizationId: ctx.organizationId,
     };
-    if (areaIdParam) empleadoWhere.areaId = areaIdParam;
+    if (areaIdParam) {
+      const area = await findAreaInOrg(ctx.organizationId, areaIdParam);
+      if (!area) return apiError("Área no encontrada en esta organización", 404);
+      empleadoWhere.areaId = area.id;
+    }
 
     const empleados = await prisma.user.findMany({
       where: empleadoWhere,
