@@ -16,6 +16,7 @@
     "db:setup-super-admin": "npx tsx scripts/setup-super-admin.ts",
     "db:studio": "prisma studio",
     "health:check": "bash scripts/check-health.sh",
+    "smoke:go-live": "bash scripts/smoke-go-live.sh",
     "docs:brochure": "npx tsx scripts/generate-commercial-brochure.ts",
     "postinstall": "prisma generate"
   },

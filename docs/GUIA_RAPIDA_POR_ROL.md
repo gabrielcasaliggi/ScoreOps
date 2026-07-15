@@ -1,6 +1,7 @@
 # Guía rápida por rol — ScoreOps
 
-Referencia de 5 minutos para demos y onboarding. Manual completo: [MANUAL_DE_USO.md](../MANUAL_DE_USO.md).
+Referencia de 5 minutos para demos y onboarding. Manual completo: [MANUAL_DE_USO.md](../MANUAL_DE_USO.md).  
+Go-live / producción: [GO_LIVE.md](./GO_LIVE.md).
 
 ---
 
