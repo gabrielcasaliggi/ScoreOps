@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
         role: data.role,
         areaId: data.areaId,
         password: passwordHash,
+        ...(data.fechaAlta ? { fechaAlta: new Date(data.fechaAlta) } : {}),
       },
       select: userSelect,
     });

@@ -9,8 +9,8 @@ export interface Art49Config {
   tramoE: number;
   impuntualidadMaxMinutos: number;
   impuntualidadMaxCantidad: number;
-  metaReparaciones: number;
-  metaPulsos: number;
+  metaReclamos: number;
+  metaVentas: number;
   metaCobranzas: number;
 }
 
@@ -23,16 +23,20 @@ export const DEFAULT_ART49_CONFIG: Art49Config = {
   tramoE: 5,
   impuntualidadMaxMinutos: 5,
   impuntualidadMaxCantidad: 5,
-  metaReparaciones: 95,
-  metaPulsos: 100,
+  metaReclamos: 95,
+  metaVentas: 100,
   metaCobranzas: 80,
 };
 
 export const TRAMOS_ART49 = [
   { id: "a" as const, nombre: "Base productividad", alcance: "individual" as const },
-  { id: "b" as const, nombre: "Asistencia perfecta", alcance: "individual" as const },
-  { id: "c" as const, nombre: "Reparaciones (95% mismo día)", alcance: "colectivo" as const },
-  { id: "d" as const, nombre: "Pulsos (100% vs sem. anterior)", alcance: "colectivo" as const },
+  { id: "b" as const, nombre: "Asistencia", alcance: "individual" as const },
+  { id: "c" as const, nombre: "Reclamos (95% cumplidos)", alcance: "colectivo" as const },
+  {
+    id: "d" as const,
+    nombre: "Ventas / productos activos (100% vs sem. anterior)",
+    alcance: "colectivo" as const,
+  },
   { id: "e" as const, nombre: "Cobranzas (≥80%)", alcance: "colectivo" as const },
 ];
 
@@ -60,4 +64,26 @@ export interface PremioArt49 {
   inasistenciasInjustificadas: number;
   tieneSancion: boolean;
   bloqueaTramosCondicionales: boolean;
+}
+
+/** Normaliza JSON legacy (metaReparaciones / metaPulsos) al shape actual. */
+export function normalizeArt49Config(
+  raw: Partial<Art49Config> & {
+    metaReparaciones?: number;
+    metaPulsos?: number;
+  }
+): Art49Config {
+  const {
+    metaReparaciones,
+    metaPulsos,
+    metaReclamos,
+    metaVentas,
+    ...rest
+  } = raw;
+  return {
+    ...DEFAULT_ART49_CONFIG,
+    ...rest,
+    metaReclamos: metaReclamos ?? metaReparaciones ?? DEFAULT_ART49_CONFIG.metaReclamos,
+    metaVentas: metaVentas ?? metaPulsos ?? DEFAULT_ART49_CONFIG.metaVentas,
+  };
 }

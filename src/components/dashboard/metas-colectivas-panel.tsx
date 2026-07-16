@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Target } from "lucide-react";
+import { Loader2, RefreshCw, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,20 +10,20 @@ import { Label } from "@/components/ui/label";
 interface MetaColectiva {
   id: string;
   periodoId: string;
-  tipo: "REPARACIONES" | "PULSOS" | "COBRANZAS";
+  tipo: "RECLAMOS" | "VENTAS" | "COBRANZAS";
   valorMeta: number;
   valorActual: number;
   observacion: string | null;
 }
 
 const LABELS: Record<MetaColectiva["tipo"], { titulo: string; ayuda: string }> = {
-  REPARACIONES: {
-    titulo: "c) Reparaciones",
-    ayuda: "Meta típica: 95% de reclamos resueltos el mismo día.",
+  RECLAMOS: {
+    titulo: "c) Reclamos",
+    ayuda: "Meta típica: 95% de reclamos técnicos cumplidos en el semestre.",
   },
-  PULSOS: {
-    titulo: "d) Pulsos",
-    ayuda: "Meta típica: alcanzar o superar el 100% del semestre anterior.",
+  VENTAS: {
+    titulo: "d) Ventas / productos activos",
+    ayuda: "Meta típica: mantener o superar el 100% vs el semestre anterior (reemplaza pulsos).",
   },
   COBRANZAS: {
     titulo: "e) Cobranzas",
@@ -36,16 +36,19 @@ export function MetasColectivasPanel({ isAdmin }: { isAdmin: boolean }) {
   const [periodoLabel, setPeriodoLabel] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
 
+  async function load() {
+    const res = await fetch("/api/premio/colectivas");
+    const data = await res.json();
+    setMetas(data.metas ?? []);
+    setPeriodoLabel(data.periodo?.label ?? "");
+    setLoading(false);
+  }
+
   useEffect(() => {
-    fetch("/api/premio/colectivas")
-      .then((r) => r.json())
-      .then((data) => {
-        setMetas(data.metas ?? []);
-        setPeriodoLabel(data.periodo?.label ?? "");
-      })
-      .finally(() => setLoading(false));
+    load();
   }, []);
 
   async function saveMeta(meta: MetaColectiva) {
@@ -66,6 +69,25 @@ export function MetasColectivasPanel({ isAdmin }: { isAdmin: boolean }) {
     }
   }
 
+  async function syncReclamos() {
+    setSyncing(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/premio/colectivas/sync-reclamos", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error ?? "No se pudo sincronizar reclamos");
+        return;
+      }
+      setMessage(data.message ?? "Sync de reclamos listo");
+      if (data.updated) await load();
+    } catch {
+      setMessage("Error de conexión al sincronizar");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   if (loading) return null;
 
   return (
@@ -76,7 +98,8 @@ export function MetasColectivasPanel({ isAdmin }: { isAdmin: boolean }) {
           Metas del equipo
         </CardTitle>
         <CardDescription>
-          Cada meta cumplida suma 5% del sueldo a toda el área.
+          Cada meta cumplida suma 5% del sueldo a toda el área (si no hay sanción ni falta
+          injustificada).
           {periodoLabel ? ` · ${periodoLabel}` : ""}
           {!isAdmin && " · Solo lectura"}
         </CardDescription>
@@ -144,19 +167,37 @@ export function MetasColectivasPanel({ isAdmin }: { isAdmin: boolean }) {
                 </div>
               </div>
               {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={saving === meta.tipo}
-                  onClick={() => saveMeta(meta)}
-                >
-                  {saving === meta.tipo ? "Guardando..." : "Guardar"}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={saving === meta.tipo}
+                    onClick={() => saveMeta(meta)}
+                  >
+                    {saving === meta.tipo ? "Guardando..." : "Guardar"}
+                  </Button>
+                  {meta.tipo === "RECLAMOS" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={syncing}
+                      onClick={syncReclamos}
+                      title="Consulta la API de trámites (stub por ahora)"
+                    >
+                      {syncing ? (
+                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="mr-1 h-3.5 w-3.5" />
+                      )}
+                      Sync trámites
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           );
         })}
-        {message && <p className="text-sm text-emerald-600">{message}</p>}
+        {message && <p className="text-sm text-emerald-700">{message}</p>}
       </CardContent>
     </Card>
   );

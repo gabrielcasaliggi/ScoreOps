@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 const BLOQUES_VISUALES = [
   { id: "a", label: "Base", pct: 30, hint: "Individual · 6+ meses" },
   { id: "b", label: "Asistencia", pct: 5, hint: "Individual" },
-  { id: "c", label: "Reparaciones", pct: 5, hint: "Equipo" },
-  { id: "d", label: "Pulsos", pct: 5, hint: "Equipo" },
+  { id: "c", label: "Reclamos", pct: 5, hint: "Equipo" },
+  { id: "d", label: "Ventas", pct: 5, hint: "Equipo" },
   { id: "e", label: "Cobranzas", pct: 5, hint: "Equipo" },
 ] as const;
 
@@ -16,8 +16,9 @@ export function PremioFormulaExplainer({ compact = false }: { compact?: boolean 
     return (
       <p className="text-xs leading-relaxed text-muted-foreground">
         <span className="font-medium text-foreground">Premio = hasta 50% del sueldo:</span>{" "}
-        30% base (si tenés 6+ meses) + 5% por buena asistencia + 5% × 3 metas de equipo
-        (reparaciones, pulsos, cobranzas). S1 se paga en septiembre; S2 en marzo.
+        30% base (6+ meses) + 5% asistencia + 5% × 3 metas de equipo (reclamos, ventas,
+        cobranzas). El 20% (b–e) exige sin sanción ni falta injustificada. Oct–mar se paga en
+        abril; abr–sep en octubre.
       </p>
     );
   }

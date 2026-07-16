@@ -21,8 +21,8 @@ describe("premio-explainer", () => {
       valorAntiguedad: 50000,
       asistencias: [],
       metasColectivas: [
-        { tipo: "REPARACIONES", valorMeta: 95, valorActual: 98 },
-        { tipo: "PULSOS", valorMeta: 100, valorActual: 100 },
+        { tipo: "RECLAMOS", valorMeta: 95, valorActual: 98 },
+        { tipo: "VENTAS", valorMeta: 100, valorActual: 100 },
         { tipo: "COBRANZAS", valorMeta: 80, valorActual: 85 },
       ],
       period: {
@@ -35,8 +35,8 @@ describe("premio-explainer", () => {
         esActual: true,
         mesesCalculoLabel: "Ene–Jun 2026",
         fechaLiquidacion: new Date("2026-09-30"),
-        mesPagoLabel: "Septiembre 2026",
-        liquidacionDescripcion: "Liquidación septiembre",
+        mesPagoLabel: "Abril 2026",
+        liquidacionDescripcion: "Liquidación abril",
       },
       config: DEFAULT_ART49_CONFIG,
     });

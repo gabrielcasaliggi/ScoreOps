@@ -31,29 +31,35 @@ export const PREMIO_FORMULA_STEPS = [
   {
     titulo: "a) Base personal — 30%",
     texto:
-      "Si al cierre del semestre tenés al menos 6 meses de antigüedad, entra este 30% del sueldo.",
+      "Fijo si al cierre del semestre tenés al menos 6 meses de antigüedad (fecha de ingreso).",
   },
   {
-    titulo: "b) Buena asistencia — 5%",
+    titulo: "b) Asistencia — 5% individual",
     texto:
-      "Sin faltas injustificadas ni sanciones. Se toleran hasta 5 llegadas tarde de hasta 5 minutos. Vacaciones y accidentes de trabajo no restan.",
+      "Sin faltas injustificadas ni sanciones. Hasta 5 llegadas tarde de hasta 5 minutos. Vacaciones y accidentes de trabajo no restan.",
   },
   {
-    titulo: "c) Meta de equipo: reparaciones — 5%",
-    texto: "El equipo resuelve el 95% de los reclamos el mismo día en el semestre.",
+    titulo: "c) Reclamos — 5% colectivo",
+    texto: "El equipo cumple el 95% de reclamos técnicos en el semestre.",
   },
   {
-    titulo: "d) Meta de equipo: pulsos — 5%",
-    texto: "El volumen de pulsos del semestre alcanza o supera el 100% del semestre anterior.",
+    titulo: "d) Ventas / productos activos — 5% colectivo",
+    texto:
+      "Se mantiene o supera el 100% de ventas/productos/clientes vs el semestre anterior (reemplaza el concepto obsoleto de pulsos).",
   },
   {
-    titulo: "e) Meta de equipo: cobranzas — 5%",
+    titulo: "e) Cobranzas — 5% colectivo",
     texto: "Se cobra al menos el 80% de lo facturado en el semestre.",
+  },
+  {
+    titulo: "Condición del 20% (b–e)",
+    texto:
+      "Los tramos de asistencia y metas de equipo solo se abonan si no hay sanción disciplinaria ni ausencia injustificada en el semestre.",
   },
   {
     titulo: "¿Cuándo se paga?",
     texto:
-      "El máximo es 50% del sueldo básico + antigüedad. Lo trabajado de enero a junio se paga en septiembre; de julio a diciembre, en marzo.",
+      "Máximo 50% del sueldo básico + antigüedad. Oct–mar se liquida en abril; abr–sep en octubre (con las novedades del mes anterior).",
   },
 ] as const;
 

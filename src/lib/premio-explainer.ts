@@ -126,7 +126,7 @@ export function explicarPremioArt49(
   );
   if (tramosColectivosOff.length > 0) {
     recomendaciones.push(
-      "Metas colectivas pendientes: coordiná con tu área el avance en reparaciones, pulsos o cobranzas."
+      "Metas de equipo pendientes: coordiná el avance en reclamos, ventas o cobranzas."
     );
   }
   if (recomendaciones.length === 0) {

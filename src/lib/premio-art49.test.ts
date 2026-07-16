@@ -9,17 +9,17 @@ import { DEFAULT_ART49_CONFIG } from "./art49-types";
 import type { ProductivityPeriod } from "./productivity-period";
 
 const periodoS1: ProductivityPeriod = {
-  id: "2026-S1",
-  label: "S1 2026",
+  id: "2025-S1",
+  label: "Octubre 2025 – Marzo 2026",
   semester: 1,
   anioCalculo: 2026,
-  inicio: new Date(2026, 0, 1),
-  fin: new Date(2026, 5, 30, 23, 59, 59, 999),
+  inicio: new Date(2025, 9, 1),
+  fin: new Date(2026, 2, 31, 23, 59, 59, 999),
   esActual: true,
-  mesesCalculoLabel: "Enero – Junio 2026",
-  fechaLiquidacion: new Date(2026, 8, 30),
-  mesPagoLabel: "Septiembre 2026",
-  liquidacionDescripcion: "Pago S1 en septiembre 2026",
+  mesesCalculoLabel: "Octubre 2025 – Marzo 2026",
+  fechaLiquidacion: new Date(2026, 3, 30),
+  mesPagoLabel: "Abril 2026",
+  liquidacionDescripcion: "Cobro con haberes de abril 2026",
 };
 
 function baseInput(
@@ -31,8 +31,8 @@ function baseInput(
     valorAntiguedad: 100_000,
     asistencias: [] as { tipo: "PRESENTE"; minutosTarde: null }[],
     metasColectivas: [
-      { tipo: "REPARACIONES" as const, valorMeta: 95, valorActual: 96 },
-      { tipo: "PULSOS" as const, valorMeta: 100, valorActual: 100 },
+      { tipo: "RECLAMOS" as const, valorMeta: 95, valorActual: 96 },
+      { tipo: "VENTAS" as const, valorMeta: 100, valorActual: 100 },
       { tipo: "COBRANZAS" as const, valorMeta: 80, valorActual: 85 },
     ],
     period: periodoS1,
@@ -67,14 +67,15 @@ describe("analizarAsistenciaArt49", () => {
     ]);
     assert.equal(r.impuntualidadesLeves, 2);
     assert.equal(r.asistenciaPerfecta, true);
+    assert.equal(r.bloqueaTramosCondicionales, false);
   });
 
-  it("impuntualidad grave bloquea tramos condicionales", () => {
+  it("impuntualidad grave no bloquea el 20% colectivo, solo falla asistencia", () => {
     const r = analizarAsistenciaArt49([
       { tipo: "IMPUNTUALIDAD", minutosTarde: 10 },
     ]);
     assert.equal(r.impuntualidadesGraves, 1);
-    assert.equal(r.bloqueaTramosCondicionales, true);
+    assert.equal(r.bloqueaTramosCondicionales, false);
     assert.equal(r.asistenciaPerfecta, false);
   });
 
@@ -94,6 +95,7 @@ describe("analizarAsistenciaArt49", () => {
     const r = analizarAsistenciaArt49(registros);
     assert.equal(r.impuntualidadesLeves, 6);
     assert.equal(r.asistenciaPerfecta, false);
+    assert.equal(r.bloqueaTramosCondicionales, false);
   });
 });
 
@@ -101,7 +103,7 @@ describe("calcularPremioArt49", () => {
   it("rechaza por antigüedad insuficiente", () => {
     const r = calcularPremioArt49(
       baseInput({
-        fechaAlta: new Date(2026, 4, 1),
+        fechaAlta: new Date(2026, 1, 1),
       })
     );
     assert.equal(r.elegible, false);
@@ -133,12 +135,25 @@ describe("calcularPremioArt49", () => {
     assert.equal(activos[0].id, "a");
   });
 
-  it("pierde tramo b por metas colectivas incumplidas sin bloqueo individual", () => {
+  it("impuntualidad grave pierde solo b; mantiene colectivos", () => {
+    const r = calcularPremioArt49(
+      baseInput({
+        asistencias: [{ tipo: "IMPUNTUALIDAD", minutosTarde: 12 }],
+      })
+    );
+    assert.equal(r.porcentajeTotal, 45);
+    assert.equal(r.tramos.find((t) => t.id === "b")?.activo, false);
+    assert.equal(r.tramos.find((t) => t.id === "c")?.activo, true);
+    assert.equal(r.tramos.find((t) => t.id === "d")?.activo, true);
+    assert.equal(r.tramos.find((t) => t.id === "e")?.activo, true);
+  });
+
+  it("pierde colectivos por metas incumplidas sin bloqueo individual", () => {
     const r = calcularPremioArt49(
       baseInput({
         metasColectivas: [
-          { tipo: "REPARACIONES", valorMeta: 95, valorActual: 50 },
-          { tipo: "PULSOS", valorMeta: 100, valorActual: 50 },
+          { tipo: "RECLAMOS", valorMeta: 95, valorActual: 50 },
+          { tipo: "VENTAS", valorMeta: 100, valorActual: 50 },
           { tipo: "COBRANZAS", valorMeta: 80, valorActual: 50 },
         ],
       })

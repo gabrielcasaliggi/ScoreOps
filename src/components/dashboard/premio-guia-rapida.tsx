@@ -5,17 +5,17 @@ const PASOS = [
   {
     icon: Target,
     titulo: "1. Cómo se arma el premio",
-    texto: "Hasta 50% del sueldo: 30% base + 5% por asistencia + 15% por metas del equipo.",
+    texto: "Hasta 50%: 30% fijo (antigüedad) + 5% asistencia + 15% metas de equipo.",
   },
   {
     icon: Users,
     titulo: "2. Metas del equipo",
-    texto: "Reparaciones, pulsos y cobranzas suman 5% cada una si el equipo las cumple.",
+    texto: "Reclamos 95%, ventas 100% y cobranzas 80% — 5% cada una si se cumplen.",
   },
   {
     icon: CheckCircle2,
     titulo: "3. Quién cobraría hoy",
-    texto: "Más abajo ves ranking y a quién acompañar antes del cierre del semestre.",
+    texto: "Ranking y a quién acompañar antes del cierre (pago en abril u octubre).",
   },
 ] as const;
 

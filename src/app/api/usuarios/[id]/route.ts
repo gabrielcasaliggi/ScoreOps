@@ -49,6 +49,9 @@ export async function PATCH(
     if (data.password) {
       updateData.password = await bcrypt.hash(data.password, 10);
     }
+    if (data.fechaAlta) {
+      updateData.fechaAlta = new Date(data.fechaAlta);
+    }
 
     const updated = await prisma.user.update({
       where: { id },

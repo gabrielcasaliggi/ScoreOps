@@ -37,8 +37,8 @@ interface PremioConfig {
   tramoE: number;
   impuntualidadMaxMinutos: number;
   impuntualidadMaxCantidad: number;
-  metaReparaciones: number;
-  metaPulsos: number;
+  metaReclamos: number;
+  metaVentas: number;
   metaCobranzas: number;
 }
 
@@ -62,11 +62,11 @@ type MainSection = "cuenta" | "equipo" | "empresa";
 type EmpresaTab = "general" | "flujos" | "premio" | "integraciones";
 
 const TRAMO_META: { key: keyof PremioConfig; nombre: string }[] = [
-  { key: "tramoA", nombre: "Productividad (a)" },
-  { key: "tramoB", nombre: "Presentismo (b)" },
-  { key: "tramoC", nombre: "Puntualidad (c)" },
-  { key: "tramoD", nombre: "Metas colectivas (d)" },
-  { key: "tramoE", nombre: "Evaluación (e)" },
+  { key: "tramoA", nombre: "Base 30% (a)" },
+  { key: "tramoB", nombre: "Asistencia (b)" },
+  { key: "tramoC", nombre: "Reclamos (c)" },
+  { key: "tramoD", nombre: "Ventas (d)" },
+  { key: "tramoE", nombre: "Cobranzas (e)" },
 ];
 
 function Feedback({ error, message }: { error?: string; message?: string }) {
@@ -777,8 +777,7 @@ export default function ConfiguracionPage() {
                       <CardHeader>
                         <CardTitle>Parámetros Art. 49</CardTitle>
                         <CardDescription>
-                          Tramos del convenio. S1 (ene–jun) se paga en septiembre; S2
-                          (jul–dic) en marzo.
+                          Tramos del convenio. Oct–mar se paga en abril; abr–sep en octubre.
                         </CardDescription>
                       </CardHeader>
                       <CardContent>

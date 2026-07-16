@@ -8,7 +8,7 @@ import { isPremioHabilitado } from "@/lib/tenant";
 
 const updateMetaSchema = z.object({
   periodoId: z.string().optional(),
-  tipo: z.enum(["REPARACIONES", "PULSOS", "COBRANZAS"]),
+  tipo: z.enum(["RECLAMOS", "VENTAS", "COBRANZAS"]),
   valorMeta: z.number().min(0).max(200).optional(),
   valorActual: z.number().min(0).max(200).optional(),
   observacion: z.string().nullable().optional(),

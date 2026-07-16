@@ -8,6 +8,17 @@ const optionalPassword = z
 
 const requiredPassword = z.string().min(6, "Contraseña requerida (mínimo 6 caracteres)");
 
+const optionalFechaAlta = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.length > 0 ? v : undefined))
+  .pipe(
+    z
+      .string()
+      .refine((v) => !Number.isNaN(Date.parse(v)), "Fecha de ingreso inválida")
+      .optional()
+  );
+
 export const createUserSchema = z.object({
   email: z.string().email("Email inválido"),
   nombre: z.string().min(1, "Nombre requerido"),
@@ -17,6 +28,7 @@ export const createUserSchema = z.object({
   role: z.enum(["ADMINISTRADOR", "GERENTE", "EMPLEADO"]).default("EMPLEADO"),
   areaId: z.string().min(1, "Área requerida"),
   password: requiredPassword,
+  fechaAlta: optionalFechaAlta,
 });
 
 export const updateUserSchema = z.object({
@@ -31,6 +43,7 @@ export const updateUserSchema = z.object({
   areaId: z.string().min(1).optional(),
   activo: z.boolean().optional(),
   password: optionalPassword,
+  fechaAlta: optionalFechaAlta,
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

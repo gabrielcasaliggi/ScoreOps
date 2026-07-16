@@ -58,8 +58,8 @@ enum AsistenciaTipo {
 }
 
 enum MetaColectivaTipo {
-  REPARACIONES
-  PULSOS
+  RECLAMOS
+  VENTAS
   COBRANZAS
 }
 

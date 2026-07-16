@@ -11,6 +11,7 @@ import {
 } from "@/lib/system-config";
 import { PREMIO_TEMPLATES, type PremioTemplateId } from "@/lib/premio-templates";
 import { getWorkflowConfig, setWorkflowConfig } from "@/lib/workflow-config";
+import { normalizeArt49Config } from "@/lib/art49-types";
 
 const art49ConfigSchema = z.object({
   antiguedadMinimaMeses: z.number().int().min(1).max(24).optional(),
@@ -21,9 +22,12 @@ const art49ConfigSchema = z.object({
   tramoE: z.number().min(0).max(50).optional(),
   impuntualidadMaxMinutos: z.number().int().min(1).max(30).optional(),
   impuntualidadMaxCantidad: z.number().int().min(0).max(20).optional(),
+  metaReclamos: z.number().min(0).max(100).optional(),
+  metaVentas: z.number().min(0).max(200).optional(),
+  metaCobranzas: z.number().min(0).max(100).optional(),
+  // Legacy keys (aceptados y normalizados al guardar)
   metaReparaciones: z.number().min(0).max(100).optional(),
   metaPulsos: z.number().min(0).max(200).optional(),
-  metaCobranzas: z.number().min(0).max(100).optional(),
 });
 
 const kpiSimpleSchema = z.object({
@@ -84,7 +88,11 @@ export async function PATCH(request: NextRequest) {
       if (!parsed.success) {
         return apiError(parsed.error.issues[0]?.message ?? "Parámetros Art. 49 inválidos");
       }
-      await setArt49Config(user.organizationId, parsed.data, user.id);
+      await setArt49Config(
+        user.organizationId,
+        normalizeArt49Config(parsed.data),
+        user.id
+      );
     }
 
     if (body.workflow !== undefined) {

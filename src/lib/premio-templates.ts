@@ -14,7 +14,7 @@ export const PREMIO_TEMPLATES: PremioTemplateMeta[] = [
     id: "art49_cooperativo",
     nombre: "Art. 49 — Cooperativo",
     descripcion:
-      "Tramos a–e del convenio: productividad individual, asistencia, metas colectivas.",
+      "CCT: 30% base (antigüedad) + 5% asistencia + 15% metas de equipo (reclamos, ventas, cobranzas).",
     tienePremioMonetario: true,
   },
   {

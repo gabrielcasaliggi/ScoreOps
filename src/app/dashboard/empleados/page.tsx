@@ -56,6 +56,7 @@ const emptyForm = {
   telefono: "",
   sueldoBasico: "",
   valorAntiguedad: "",
+  fechaAlta: "",
   role: "EMPLEADO",
   areaId: "",
   password: "",
@@ -82,6 +83,7 @@ export default function EmpleadosPage() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [orgName, setOrgName] = useState("");
   const [orgSlug, setOrgSlug] = useState("");
+  const [usaArt49, setUsaArt49] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -90,6 +92,17 @@ export default function EmpleadosPage() {
         setAuthorized(data.user?.role === "ADMINISTRADOR");
         setOrgName(data.user?.organizationName ?? "");
         setOrgSlug(data.user?.organizationSlug ?? "");
+        const premioOn = data.user?.premioHabilitado !== false;
+        if (!premioOn) {
+          setUsaArt49(false);
+          return;
+        }
+        fetch("/api/admin/config")
+          .then((r) => (r.ok ? r.json() : null))
+          .then((cfg) => {
+            setUsaArt49(cfg?.premioTemplate === "art49_cooperativo");
+          })
+          .catch(() => setUsaArt49(false));
       });
   }, []);
 
@@ -128,6 +141,7 @@ export default function EmpleadosPage() {
       telefono: u.telefono ?? "",
       sueldoBasico: u.sueldoBasico != null ? String(u.sueldoBasico) : "",
       valorAntiguedad: u.valorAntiguedad != null ? String(u.valorAntiguedad) : "",
+      fechaAlta: u.fechaAlta ? u.fechaAlta.slice(0, 10) : "",
       role: u.role,
       areaId: u.area.id,
       password: "",
@@ -153,9 +167,20 @@ export default function EmpleadosPage() {
           areaId: form.areaId,
           sueldoBasico: form.sueldoBasico ? Number(form.sueldoBasico) : null,
           valorAntiguedad: form.valorAntiguedad ? Number(form.valorAntiguedad) : null,
+          ...(usaArt49 && form.fechaAlta ? { fechaAlta: form.fechaAlta } : {}),
           ...(form.password ? { password: form.password } : {}),
         }
-      : form;
+      : {
+          email: form.email,
+          nombre: form.nombre,
+          apellido: form.apellido,
+          legajo: form.legajo || undefined,
+          telefono: form.telefono || undefined,
+          role: form.role,
+          areaId: form.areaId,
+          password: form.password,
+          ...(usaArt49 && form.fechaAlta ? { fechaAlta: form.fechaAlta } : {}),
+        };
 
     const res = await fetch(url, {
       method,
@@ -406,6 +431,20 @@ export default function EmpleadosPage() {
                 />
               </div>
             </div>
+            {usaArt49 && (
+              <div className="space-y-2">
+                <Label>Fecha de ingreso</Label>
+                <Input
+                  type="date"
+                  value={form.fechaAlta}
+                  onChange={(e) => setForm({ ...form, fechaAlta: e.target.value })}
+                  required={!editing}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Sirve para el 30% de antigüedad del premio (mín. 6 meses al cierre del semestre).
+                </p>
+              </div>
+            )}
             {editing && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">

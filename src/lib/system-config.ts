@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import type { Art49Config } from "./art49-types";
-import { DEFAULT_ART49_CONFIG } from "./art49-types";
+import { DEFAULT_ART49_CONFIG, normalizeArt49Config } from "./art49-types";
 import type { KpiSimpleConfig, PremioTemplateId } from "./premio-templates";
 import { DEFAULT_KPI_SIMPLE_CONFIG } from "./premio-templates";
 
@@ -69,7 +69,7 @@ export async function getArt49Config(organizationId: string): Promise<Art49Confi
     where: configWhere(organizationId, CONFIG_KEYS.art49),
   });
   if (!row) return DEFAULT_ART49_CONFIG;
-  return { ...DEFAULT_ART49_CONFIG, ...(row.valor as unknown as Art49Config) };
+  return normalizeArt49Config(row.valor as Partial<Art49Config>);
 }
 
 export async function getPremioTemplate(organizationId: string): Promise<PremioTemplateId> {

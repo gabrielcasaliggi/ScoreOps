@@ -237,6 +237,31 @@ async function main() {
     }
   }
 
+  // --- MetaColectivaTipo: REPARACIONES→RECLAMOS, PULSOS→VENTAS ---
+  try {
+    const enumVals = await prisma.$queryRaw<{ enumlabel: string }[]>`
+      SELECT e.enumlabel
+      FROM pg_enum e
+      JOIN pg_type t ON e.enumtypid = t.oid
+      WHERE t.typname = 'MetaColectivaTipo'
+    `;
+    const labels = new Set(enumVals.map((r) => r.enumlabel));
+    if (labels.has("REPARACIONES") && !labels.has("RECLAMOS")) {
+      await prisma.$executeRaw`
+        ALTER TYPE "MetaColectivaTipo" RENAME VALUE 'REPARACIONES' TO 'RECLAMOS'
+      `;
+      console.log("MetaColectivaTipo: REPARACIONES → RECLAMOS");
+    }
+    if (labels.has("PULSOS") && !labels.has("VENTAS")) {
+      await prisma.$executeRaw`
+        ALTER TYPE "MetaColectivaTipo" RENAME VALUE 'PULSOS' TO 'VENTAS'
+      `;
+      console.log("MetaColectivaTipo: PULSOS → VENTAS");
+    }
+  } catch (err) {
+    console.warn("MetaColectivaTipo rename (puede no existir aún):", err);
+  }
+
   const areas = await prisma.$queryRaw<{ count: bigint }[]>`
     SELECT COUNT(*)::bigint AS count FROM "Area"
   `;

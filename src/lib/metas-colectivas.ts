@@ -4,14 +4,14 @@ import type { Art49Config } from "./art49-types";
 import { DEFAULT_ART49_CONFIG } from "./art49-types";
 import { getArt49Config } from "./system-config";
 
-const TIPOS = ["REPARACIONES", "PULSOS", "COBRANZAS"] as const;
+const TIPOS = ["RECLAMOS", "VENTAS", "COBRANZAS"] as const;
 
 function defaultMetaForTipo(
   tipo: (typeof TIPOS)[number],
   config: Art49Config
 ): number {
-  if (tipo === "REPARACIONES") return config.metaReparaciones;
-  if (tipo === "PULSOS") return config.metaPulsos;
+  if (tipo === "RECLAMOS") return config.metaReclamos;
+  if (tipo === "VENTAS") return config.metaVentas;
   return config.metaCobranzas;
 }
 

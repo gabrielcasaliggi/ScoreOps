@@ -12,76 +12,96 @@ export interface ProductivityPeriod {
   mesesCalculoLabel: string;
   /** Ventana orientativa de cobro (fines del mes de pago) */
   fechaLiquidacion: Date;
-  /** Ej: "Septiembre 2026" */
+  /** Ej: "Abril 2026" */
   mesPagoLabel: string;
   /** Texto para UI / reportes */
   liquidacionDescripcion: string;
 }
 
 /**
- * Semestres de acumulación (telecomunicaciones):
- * - S1: cálculo Ene–Jun → pago con haberes de septiembre (mismo año)
- * - S2: cálculo Jul–Dic → pago con haberes de marzo (año siguiente)
+ * Semestres CCT telecomunicaciones:
+ * - S1: cálculo Oct (año N) – Mar (año N+1) → pago con haberes de abril N+1
+ * - S2: cálculo Abr – Sep (año N) → pago con haberes de octubre N
+ */
+function resolveCurrentSemester(ref: Date): { semester: 1 | 2; startYear: number } {
+  const year = ref.getFullYear();
+  const month = ref.getMonth(); // 0=ene … 9=oct
+
+  // Oct–Dic → S1 que empieza este año
+  if (month >= 9) {
+    return { semester: 1, startYear: year };
+  }
+  // Ene–Mar → S1 que empezó el octubre anterior
+  if (month <= 2) {
+    return { semester: 1, startYear: year - 1 };
+  }
+  // Abr–Sep → S2 del año calendario
+  return { semester: 2, startYear: year };
+}
+
+function shiftSemester(
+  semester: 1 | 2,
+  startYear: number,
+  offset: 0 | -1
+): { semester: 1 | 2; startYear: number } {
+  if (offset === 0) return { semester, startYear };
+  if (semester === 1) {
+    // Anterior a S1 (oct N–mar N+1) = S2 abr–sep del mismo N
+    return { semester: 2, startYear };
+  }
+  // Anterior a S2 (abr–sep N) = S1 oct (N-1)–mar N
+  return { semester: 1, startYear: startYear - 1 };
+}
+
+/**
+ * Semestres de acumulación (telecomunicaciones / CCT):
+ * - S1: Oct–Mar → pago abril
+ * - S2: Abr–Sep → pago octubre
  */
 export function getSemesterPeriod(
   offset: 0 | -1 = 0,
   ref: Date = new Date()
 ): ProductivityPeriod {
-  const year = ref.getFullYear();
-  const month = ref.getMonth();
-  const isFirstHalf = month < 6;
+  const current = resolveCurrentSemester(ref);
+  const { semester, startYear } = shiftSemester(current.semester, current.startYear, offset);
 
-  let semYear = year;
-  let semester: 1 | 2 = isFirstHalf ? 1 : 2;
+  let inicio: Date;
+  let fin: Date;
+  let mesesCalculoLabel: string;
+  let fechaLiquidacion: Date;
+  let mesPagoLabel: string;
+  let liquidacionDescripcion: string;
+  let anioCalculo: number;
 
-  if (offset === -1) {
-    if (semester === 1) {
-      semester = 2;
-      semYear -= 1;
-    } else {
-      semester = 1;
-    }
+  if (semester === 1) {
+    // Oct startYear – Mar startYear+1 → pago Abril startYear+1
+    inicio = new Date(startYear, 9, 1, 0, 0, 0, 0);
+    fin = new Date(startYear + 1, 2, 31, 23, 59, 59, 999);
+    anioCalculo = startYear + 1;
+    mesesCalculoLabel = `Octubre ${startYear} – Marzo ${startYear + 1}`;
+    fechaLiquidacion = new Date(startYear + 1, 3, 30, 23, 59, 59, 999);
+    mesPagoLabel = `Abril ${startYear + 1}`;
+    liquidacionDescripcion = `Cobro con haberes de abril ${startYear + 1} (novedades de marzo)`;
+  } else {
+    // Abr–Sep startYear → pago Octubre startYear
+    inicio = new Date(startYear, 3, 1, 0, 0, 0, 0);
+    fin = new Date(startYear, 8, 30, 23, 59, 59, 999);
+    anioCalculo = startYear;
+    mesesCalculoLabel = `Abril – Septiembre ${startYear}`;
+    fechaLiquidacion = new Date(startYear, 9, 31, 23, 59, 59, 999);
+    mesPagoLabel = `Octubre ${startYear}`;
+    liquidacionDescripcion = `Cobro con haberes de octubre ${startYear} (novedades de septiembre)`;
   }
 
-  const inicio =
-    semester === 1
-      ? new Date(semYear, 0, 1, 0, 0, 0, 0)
-      : new Date(semYear, 6, 1, 0, 0, 0, 0);
-
-  const fin =
-    semester === 1
-      ? new Date(semYear, 5, 30, 23, 59, 59, 999)
-      : new Date(semYear, 11, 31, 23, 59, 59, 999);
-
-  const mesesCalculoLabel =
-    semester === 1
-      ? `Enero – Junio ${semYear}`
-      : `Julio – Diciembre ${semYear}`;
-
   const label = mesesCalculoLabel;
-
-  // Fines de septiembre / marzo como referencia de liquidación
-  const fechaLiquidacion =
-    semester === 1
-      ? new Date(semYear, 8, 30, 23, 59, 59, 999)
-      : new Date(semYear + 1, 2, 31, 23, 59, 59, 999);
-
-  const mesPagoLabel =
-    semester === 1 ? `Septiembre ${semYear}` : `Marzo ${semYear + 1}`;
-
-  const liquidacionDescripcion =
-    semester === 1
-      ? `Cobro con haberes de septiembre ${semYear} (fines de sept. / inicios de oct.)`
-      : `Cobro con haberes de marzo ${semYear + 1} (fines de mar. / inicios de abr.)`;
-
   const now = new Date();
   const esActual = now >= inicio && now <= fin;
 
   return {
-    id: `${semYear}-S${semester}`,
+    id: `${startYear}-S${semester}`,
     label,
     semester,
-    anioCalculo: semYear,
+    anioCalculo,
     inicio,
     fin,
     esActual,
@@ -140,9 +160,6 @@ export function daysUntil(date: Date): number {
 }
 
 export function periodoIdFromDate(date: Date): string {
-  const month = date.getMonth();
-  const year = date.getFullYear();
-  const semester = month < 6 ? 1 : 2;
-  const semYear = year;
-  return `${semYear}-S${semester}`;
+  const { semester, startYear } = resolveCurrentSemester(date);
+  return `${startYear}-S${semester}`;
 }

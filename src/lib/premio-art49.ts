@@ -29,6 +29,7 @@ export interface AnalisisAsistenciaArt49 {
   inasistenciasInjustificadas: number;
   tieneSancion: boolean;
   asistenciaPerfecta: boolean;
+  /** Bloquea el 20% (tramos b–e): solo sanción o falta injustificada */
   bloqueaTramosCondicionales: boolean;
 }
 
@@ -58,11 +59,14 @@ export function analizarAsistenciaArt49(
     }
   }
 
+  // CCT: el 20% (b–e) se condiciona a sin sanción y sin ausencia injustificada.
+  // La puntualidad solo afecta el tramo b (asistencia).
   const bloqueaTramosCondicionales =
-    tieneSancion || inasistenciasInjustificadas > 0 || impuntualidadesGraves > 0;
+    tieneSancion || inasistenciasInjustificadas > 0;
 
   const asistenciaPerfecta =
     !bloqueaTramosCondicionales &&
+    impuntualidadesGraves === 0 &&
     impuntualidadesLeves <= config.impuntualidadMaxCantidad;
 
   return {
@@ -83,18 +87,20 @@ export function mesesAntiguedad(fechaAlta: Date, ref: Date = new Date()): number
   return Math.max(0, total);
 }
 
+type MetaTipo = "RECLAMOS" | "VENTAS" | "COBRANZAS";
+
 function metaCumplida(
-  tipo: "REPARACIONES" | "PULSOS" | "COBRANZAS",
+  tipo: MetaTipo,
   metas: Pick<MetaColectivaSemestre, "tipo" | "valorMeta" | "valorActual">[],
   config: Art49Config
 ): { cumplida: boolean; valorActual: number; valorMeta: number } {
   const meta = metas.find((m) => m.tipo === tipo);
   const valorMeta =
     meta?.valorMeta ??
-    (tipo === "REPARACIONES"
-      ? config.metaReparaciones
-      : tipo === "PULSOS"
-        ? config.metaPulsos
+    (tipo === "RECLAMOS"
+      ? config.metaReclamos
+      : tipo === "VENTAS"
+        ? config.metaVentas
         : config.metaCobranzas);
   const valorActual = meta?.valorActual ?? 0;
   return { cumplida: valorActual >= valorMeta, valorActual, valorMeta };
@@ -128,40 +134,48 @@ export function calcularPremioArt49(input: {
     });
   }
 
-  const rep = metaCumplida("REPARACIONES", input.metasColectivas, config);
-  const pul = metaCumplida("PULSOS", input.metasColectivas, config);
+  const reclamos = metaCumplida("RECLAMOS", input.metasColectivas, config);
+  const ventas = metaCumplida("VENTAS", input.metasColectivas, config);
   const cob = metaCumplida("COBRANZAS", input.metasColectivas, config);
+
+  const bloqueoMsg = asistencia.tieneSancion
+    ? "Sanción disciplinaria en el semestre"
+    : asistencia.inasistenciasInjustificadas > 0
+      ? "Ausencia injustificada en el semestre"
+      : "Requisito individual no cumplido (b–e)";
 
   const tramosActivos: Record<TramoId, { activo: boolean; motivo?: string }> = {
     a: { activo: true },
     b: {
       activo: !asistencia.bloqueaTramosCondicionales && asistencia.asistenciaPerfecta,
       motivo: asistencia.bloqueaTramosCondicionales
-        ? "Sanción, falta injustificada o impuntualidad > 5 min"
-        : !asistencia.asistenciaPerfecta
-          ? `Impuntualidades leves: ${asistencia.impuntualidadesLeves}/${config.impuntualidadMaxCantidad}`
-          : undefined,
+        ? bloqueoMsg
+        : asistencia.impuntualidadesGraves > 0
+          ? "Impuntualidad mayor a 5 minutos"
+          : !asistencia.asistenciaPerfecta
+            ? `Impuntualidades leves: ${asistencia.impuntualidadesLeves}/${config.impuntualidadMaxCantidad}`
+            : undefined,
     },
     c: {
-      activo: !asistencia.bloqueaTramosCondicionales && rep.cumplida,
+      activo: !asistencia.bloqueaTramosCondicionales && reclamos.cumplida,
       motivo: asistencia.bloqueaTramosCondicionales
-        ? "Requisito individual no cumplido (b–e)"
-        : !rep.cumplida
-          ? `Reparaciones ${rep.valorActual}% / meta ${rep.valorMeta}%`
+        ? bloqueoMsg
+        : !reclamos.cumplida
+          ? `Reclamos ${reclamos.valorActual}% / meta ${reclamos.valorMeta}%`
           : undefined,
     },
     d: {
-      activo: !asistencia.bloqueaTramosCondicionales && pul.cumplida,
+      activo: !asistencia.bloqueaTramosCondicionales && ventas.cumplida,
       motivo: asistencia.bloqueaTramosCondicionales
-        ? "Requisito individual no cumplido (b–e)"
-        : !pul.cumplida
-          ? `Pulsos ${pul.valorActual}% / meta ${pul.valorMeta}%`
+        ? bloqueoMsg
+        : !ventas.cumplida
+          ? `Ventas ${ventas.valorActual}% / meta ${ventas.valorMeta}%`
           : undefined,
     },
     e: {
       activo: !asistencia.bloqueaTramosCondicionales && cob.cumplida,
       motivo: asistencia.bloqueaTramosCondicionales
-        ? "Requisito individual no cumplido (b–e)"
+        ? bloqueoMsg
         : !cob.cumplida
           ? `Cobranzas ${cob.valorActual}% / meta ${cob.valorMeta}%`
           : undefined,
