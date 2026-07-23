@@ -38,7 +38,7 @@ import { formatPremioResumen } from "@/lib/premio-formula";
 import { PremioFormulaExplainer } from "@/components/dashboard/premio-formula-explainer";
 import {
   LatencyMetricsPanel,
-  latencyCell,
+  latencyBreakdownCell,
 } from "@/components/dashboard/latency-metrics-panel";
 import { cn, formatPercent, getInitials } from "@/lib/utils";
 import type { AggregatedLatencies } from "@/lib/task-latency";
@@ -472,9 +472,9 @@ export function TeamDashboard({
                   <th className="px-5 py-3 text-right">Eficiencia</th>
                   <th
                     className="px-5 py-3 text-right"
-                    title="Ciclo total promedio (asignación → cierre)"
+                    title="Espera · Resolviendo · Ciclo total (promedios)"
                   >
-                    Ciclo
+                    Tiempos
                   </th>
                   <th className="px-5 py-3 text-right" title="Tramos activos: a base, b asistencia, c–e metas de equipo">
                     Tramos a–e
@@ -504,14 +504,14 @@ export function TeamDashboard({
                       {formatPercent(e.productivityBonus.eficienciaEvaluable)}
                     </td>
                     <td
-                      className="px-5 py-3.5 text-right tabular-nums text-muted-foreground"
+                      className="px-5 py-3.5 text-right tabular-nums text-xs text-muted-foreground"
                       title={
                         e.latencias
-                          ? `Inicio ${formatLatencyMinutes(e.latencias.demoraInicio.avg)} · Activo ${formatLatencyMinutes(e.latencias.tiempoActivo.avg)}`
+                          ? `Espera ${formatLatencyMinutes(e.latencias.tiempoOcioso.avg)} · Activo ${formatLatencyMinutes(e.latencias.tiempoActivo.avg)} · Total ${formatLatencyMinutes(e.latencias.tiempoTotal.avg)}${e.latencias.pctOcioso.avg != null ? ` · ${e.latencias.pctOcioso.avg}% ocioso` : ""}`
                           : undefined
                       }
                     >
-                      {latencyCell(e.latencias)}
+                      {latencyBreakdownCell(e.latencias)}
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-muted-foreground font-mono text-xs">
                       {e.productivityBonus.art49

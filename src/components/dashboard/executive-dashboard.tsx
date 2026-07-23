@@ -32,7 +32,7 @@ import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   LatencyMetricsPanel,
-  latencyCell,
+  latencyBreakdownCell,
 } from "@/components/dashboard/latency-metrics-panel";
 import {
   CHART,
@@ -310,8 +310,11 @@ export function ExecutiveDashboard() {
                 <th className="pb-2 text-right">Venc.</th>
                 <th className="pb-2 text-right">Hechas</th>
                 <th className="pb-2 text-right">Puntual.</th>
-                <th className="pb-2 text-right" title="Ciclo total promedio">
-                  Ciclo
+                <th
+                  className="pb-2 text-right"
+                  title="Espera · Resolviendo · Ciclo total"
+                >
+                  Tiempos
                 </th>
               </tr>
             </thead>
@@ -335,10 +338,10 @@ export function ExecutiveDashboard() {
                   <td className="py-3 text-right tabular-nums">{a.tareasCompletadas}</td>
                   <td className="py-3 text-right tabular-nums">{a.puntualidadPct}%</td>
                   <td
-                    className="py-3 text-right tabular-nums text-muted-foreground"
-                    title={`Inicio ${formatLatencyMinutes(a.latencias.demoraInicio.avg)} · Activo ${formatLatencyMinutes(a.latencias.tiempoActivo.avg)}`}
+                    className="py-3 text-right tabular-nums text-xs text-muted-foreground"
+                    title={`Espera ${formatLatencyMinutes(a.latencias.tiempoOcioso.avg)} · Activo ${formatLatencyMinutes(a.latencias.tiempoActivo.avg)} · Total ${formatLatencyMinutes(a.latencias.tiempoTotal.avg)}${a.latencias.pctOcioso.avg != null ? ` · ${a.latencias.pctOcioso.avg}% ocioso` : ""}`}
                   >
-                    {latencyCell(a.latencias)}
+                    {latencyBreakdownCell(a.latencias)}
                   </td>
                 </tr>
               ))}
@@ -490,8 +493,11 @@ export function ExecutiveDashboard() {
                 <th className="pb-2 text-right">Venc.</th>
                 <th className="pb-2 text-right">Hechas</th>
                 <th className="pb-2 text-right">Puntual.</th>
-                <th className="pb-2 text-right" title="Ciclo total promedio">
-                  Ciclo
+                <th
+                  className="pb-2 text-right"
+                  title="Espera · Resolviendo · Ciclo total"
+                >
+                  Tiempos
                 </th>
                 <th className="pb-2 text-right">Alerta</th>
                 <th className="pb-2 text-right" />
@@ -519,10 +525,10 @@ export function ExecutiveDashboard() {
                   <td className="py-3 text-right tabular-nums">{p.tareasCompletadas}</td>
                   <td className="py-3 text-right tabular-nums">{p.puntualidadPct}%</td>
                   <td
-                    className="py-3 text-right tabular-nums text-muted-foreground"
-                    title={`Inicio ${formatLatencyMinutes(p.latencias.demoraInicio.avg)} · Activo ${formatLatencyMinutes(p.latencias.tiempoActivo.avg)}`}
+                    className="py-3 text-right tabular-nums text-xs text-muted-foreground"
+                    title={`Espera ${formatLatencyMinutes(p.latencias.tiempoOcioso.avg)} · Activo ${formatLatencyMinutes(p.latencias.tiempoActivo.avg)} · Total ${formatLatencyMinutes(p.latencias.tiempoTotal.avg)}${p.latencias.pctOcioso.avg != null ? ` · ${p.latencias.pctOcioso.avg}% ocioso` : ""}`}
                   >
-                    {latencyCell(p.latencias)}
+                    {latencyBreakdownCell(p.latencias)}
                   </td>
                   <td className="py-3 text-right">
                     {p.alerta ? (
