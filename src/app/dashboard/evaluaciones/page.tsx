@@ -42,7 +42,15 @@ interface Resultado {
   apellido: string;
   area: string;
   puntajeGlobal: number;
+  porRol?: Partial<Record<string, number>>;
   porCompetencia: { competencia: string; puntaje: number }[];
+}
+
+interface CoberturaRol {
+  rol: string;
+  completa: boolean;
+  respuestas: number;
+  total: number;
 }
 
 const ROL_LABEL: Record<string, string> = {
@@ -52,11 +60,20 @@ const ROL_LABEL: Record<string, string> = {
   SUBORDINADO: "Como subordinado",
 };
 
+const ROL_RECIBIDO_LABEL: Record<string, string> = {
+  AUTOEVALUACION: "Tu autoevaluación",
+  GERENTE: "Evaluación del gerente",
+  PAR: "Evaluación de pares",
+  SUBORDINADO: "Evaluación de subordinados",
+};
+
 export default function EvaluacionesPage() {
   const [role, setRole] = useState<string | null>(null);
   const [ciclos, setCiclos] = useState<Ciclo[]>([]);
   const [pendientes, setPendientes] = useState<Pendiente[]>([]);
   const [resultados, setResultados] = useState<Resultado[]>([]);
+  const [miResultado, setMiResultado] = useState<Resultado | null>(null);
+  const [miCobertura, setMiCobertura] = useState<CoberturaRol[]>([]);
   const [cicloActivo, setCicloActivo] = useState<Ciclo | null>(null);
   const [selectedCicloId, setSelectedCicloId] = useState("");
   const [evaluando, setEvaluando] = useState<Pendiente | null>(null);
@@ -72,6 +89,7 @@ export default function EvaluacionesPage() {
 
   const isAdmin = role === "ADMINISTRADOR";
   const isManager = role === "ADMINISTRADOR" || role === "GERENTE";
+  const isEmployee = role === "EMPLEADO";
 
   const load = useCallback(async () => {
     const [meRes, ciclosRes, pendRes] = await Promise.all([
@@ -80,7 +98,8 @@ export default function EvaluacionesPage() {
       fetch("/api/evaluaciones/pendientes"),
     ]);
     const me = await meRes.json();
-    setRole(me.user?.role ?? null);
+    const userRole = me.user?.role ?? null;
+    setRole(userRole);
 
     const ciclosData = await ciclosRes.json();
     setCiclos(ciclosData);
@@ -90,10 +109,23 @@ export default function EvaluacionesPage() {
     setCicloActivo(pendData.ciclo);
 
     const cicloId = pendData.ciclo?.id || ciclosData[0]?.id;
-    if (cicloId && (me.user?.role === "ADMINISTRADOR" || me.user?.role === "GERENTE")) {
+    if (cicloId && (userRole === "ADMINISTRADOR" || userRole === "GERENTE")) {
       setSelectedCicloId((prev) => prev || cicloId);
       const resRes = await fetch(`/api/evaluaciones/resultados?cicloId=${cicloId}`);
       setResultados(await resRes.json());
+    }
+
+    if (userRole === "EMPLEADO" || userRole === "GERENTE") {
+      const misRes = await fetch(
+        cicloId
+          ? `/api/evaluaciones/mis-resultados?cicloId=${cicloId}`
+          : "/api/evaluaciones/mis-resultados"
+      );
+      if (misRes.ok) {
+        const mis = await misRes.json();
+        setMiResultado(mis.resultado ?? null);
+        setMiCobertura(mis.cobertura ?? []);
+      }
     }
   }, []);
 
@@ -173,6 +205,14 @@ export default function EvaluacionesPage() {
       const res = await fetch(`/api/evaluaciones/resultados?cicloId=${cicloId}`);
       setResultados(await res.json());
     }
+    if (isEmployee || role === "GERENTE") {
+      const misRes = await fetch(`/api/evaluaciones/mis-resultados?cicloId=${cicloId}`);
+      if (misRes.ok) {
+        const mis = await misRes.json();
+        setMiResultado(mis.resultado ?? null);
+        setMiCobertura(mis.cobertura ?? []);
+      }
+    }
   }
 
   return (
@@ -183,7 +223,9 @@ export default function EvaluacionesPage() {
           Evaluaciones 360°
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Autoevaluación, gerente, pares y subordinados con ponderación configurable
+          {isEmployee
+            ? "Completá tu autoevaluación y mirá el feedback que recibís"
+            : "Autoevaluación, gerente y subordinados con ponderación configurable"}
         </p>
       </div>
 
@@ -222,7 +264,11 @@ export default function EvaluacionesPage() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 bg-white/80"
             >
               <div>
-                <p className="font-medium">{p.evaluadoNombre}</p>
+                <p className="font-medium">
+                  {p.rol === "AUTOEVALUACION"
+                    ? "Tu autoevaluación"
+                    : `Evaluá a ${p.evaluadoNombre}`}
+                </p>
                 <p className="text-xs text-muted-foreground">{ROL_LABEL[p.rol] ?? p.rol}</p>
                 <Progress
                   value={(p.progreso / p.total) * 100}
@@ -236,6 +282,66 @@ export default function EvaluacionesPage() {
           ))}
         </CardContent>
       </Card>
+
+      {(isEmployee || role === "GERENTE") && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Star className="h-4 w-4" />
+              Mi resultado 360°
+            </CardTitle>
+            <CardDescription>
+              Feedback recibido sobre vos en este ciclo (sin ver evaluaciones de otras personas)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {miCobertura.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {miCobertura.map((c) => (
+                  <div
+                    key={c.rol}
+                    className="flex items-center justify-between rounded-xl border px-3 py-2 text-sm"
+                  >
+                    <span>{ROL_RECIBIDO_LABEL[c.rol] ?? c.rol}</span>
+                    <Badge variant={c.completa ? "default" : "secondary"}>
+                      {c.completa ? "Recibida" : "Pendiente"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {miResultado ? (
+              <div className="space-y-3">
+                <div className="rounded-2xl border bg-slate-50/80 px-4 py-3">
+                  <p className="text-xs text-muted-foreground">Puntaje global</p>
+                  <p className="text-2xl font-bold tracking-tight">{miResultado.puntajeGlobal}</p>
+                  {miResultado.porRol && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {Object.entries(miResultado.porRol)
+                        .map(([rol, pts]) => `${ROL_RECIBIDO_LABEL[rol] ?? rol}: ${pts}`)
+                        .join(" · ")}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {miResultado.porCompetencia.map((c) => (
+                    <div key={c.competencia} className="flex items-center justify-between text-sm">
+                      <span>{c.competencia}</span>
+                      <span className="font-medium">{c.puntaje || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Todavía no hay evaluaciones hacia vos en este ciclo. Cuando tu gerente (u otros
+                roles) completen su parte, vas a ver el resultado acá.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {isAdmin && (
         <Card>
@@ -357,7 +463,9 @@ export default function EvaluacionesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Evaluar a {evaluando?.evaluadoNombre}
+              {evaluando?.rol === "AUTOEVALUACION"
+                ? "Tu autoevaluación"
+                : `Evaluar a ${evaluando?.evaluadoNombre}`}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={enviarEvaluacion} className="space-y-4">

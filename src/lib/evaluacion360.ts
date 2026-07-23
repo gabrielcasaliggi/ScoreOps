@@ -56,10 +56,11 @@ export function buildAssignmentsForUser(
       });
     }
 
+    // Fallback: admin evalúa como gerente solo si no hay un GERENTE real en el área.
     if (
       evaluador.role === "ADMINISTRADOR" &&
       evaluado.role === "EMPLEADO" &&
-      !gerentes.some((g) => g.areaId === evaluado.areaId)
+      !gerentes.some((g) => g.role === "GERENTE" && g.areaId === evaluado.areaId)
     ) {
       assignments.push({
         cicloId,
@@ -70,20 +71,8 @@ export function buildAssignmentsForUser(
       });
     }
 
-    if (
-      evaluador.role === "EMPLEADO" &&
-      evaluado.role === "EMPLEADO" &&
-      evaluador.areaId === evaluado.areaId &&
-      evaluador.id !== evaluado.id
-    ) {
-      assignments.push({
-        cicloId,
-        evaluadoId: evaluado.id,
-        evaluadoNombre: label,
-        evaluadorId: evaluador.id,
-        rol: "PAR",
-      });
-    }
+    // Los empleados no evalúan a pares automáticamente: solo autoevaluación
+    // y a su gerente (SUBORDINADO). Evita que vean/respondan evaluaciones ajenas.
 
     if (evaluado.role === "GERENTE") {
       const subordinados = empleados.filter(
@@ -248,6 +237,76 @@ export async function getResultadosCiclo(cicloId: string): Promise<ResultadoEval
       ev.areaId
     );
   });
+}
+
+export interface CoberturaRol {
+  rol: EvaluacionRol;
+  completa: boolean;
+  respuestas: number;
+  total: number;
+}
+
+/** Resultado agregado solo del evaluado indicado (sin filtrar ajenos). */
+export async function getResultadoParaEvaluado(
+  cicloId: string,
+  evaluadoId: string
+): Promise<{ resultado: ResultadoEvaluado | null; cobertura: CoberturaRol[] }> {
+  const ciclo = await prisma.evaluacion360Ciclo.findUnique({
+    where: { id: cicloId },
+    select: { organizationId: true },
+  });
+  if (!ciclo) return { resultado: null, cobertura: [] };
+
+  const pesos = await getEvaluacion360Pesos(ciclo.organizationId);
+
+  const [evaluado, respuestas] = await Promise.all([
+    prisma.user.findFirst({
+      where: { id: evaluadoId, organizationId: ciclo.organizationId },
+      include: { area: true },
+    }),
+    prisma.evaluacion360Respuesta.findMany({
+      where: { cicloId, evaluadoId },
+      select: { rol: true, competencia: true, puntaje: true, evaluadorId: true },
+    }),
+  ]);
+
+  if (!evaluado) return { resultado: null, cobertura: [] };
+
+  const rolesEsperados: EvaluacionRol[] =
+    evaluado.role === "GERENTE"
+      ? ["AUTOEVALUACION", "SUBORDINADO"]
+      : ["AUTOEVALUACION", "GERENTE"];
+
+  const cobertura: CoberturaRol[] = rolesEsperados.map((rol) => {
+    const delRol = respuestas.filter((r) => r.rol === rol);
+    const porEvaluador = new Map<string, number>();
+    for (const r of delRol) {
+      porEvaluador.set(r.evaluadorId, (porEvaluador.get(r.evaluadorId) ?? 0) + 1);
+    }
+    const completa = [...porEvaluador.values()].some((n) => n >= DEFAULT_COMPETENCIAS.length);
+    return {
+      rol,
+      completa,
+      respuestas: delRol.length,
+      total: DEFAULT_COMPETENCIAS.length,
+    };
+  });
+
+  if (respuestas.length === 0) {
+    return { resultado: null, cobertura };
+  }
+
+  const resultado = calcularResultadoEvaluado(
+    evaluado.id,
+    evaluado.nombre,
+    evaluado.apellido,
+    evaluado.area.nombre,
+    respuestas.map((r) => ({ rol: r.rol, competencia: r.competencia, puntaje: r.puntaje })),
+    pesos,
+    evaluado.areaId
+  );
+
+  return { resultado, cobertura };
 }
 
 export async function getActiveCiclo(organizationId: string) {
