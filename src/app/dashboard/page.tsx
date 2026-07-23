@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { EmployeeDashboard } from "@/components/dashboard/employee-dashboard";
 import { OperationsDashboard } from "@/components/dashboard/operations-dashboard";
-import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -117,14 +116,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <EmployeeDashboard
-        {...personalData}
-        tareas={tareas}
-        premioHabilitado={premioHabilitado}
-        onRefresh={loadData}
-      />
-      <AiInsightsPanel />
-    </div>
+    <EmployeeDashboard
+      {...personalData}
+      tareas={tareas}
+      premioHabilitado={premioHabilitado}
+      onRefresh={loadData}
+    />
   );
 }
