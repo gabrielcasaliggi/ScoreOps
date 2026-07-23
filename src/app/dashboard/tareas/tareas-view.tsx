@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, ClipboardList, LayoutGrid, List, Plus } from "lucide-react";
+import { AlertTriangle, CalendarDays, ClipboardList, LayoutGrid, List, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ManagerKanban } from "@/components/tasks/manager-kanban";
+import { ManagerTaskCalendar } from "@/components/tasks/manager-task-calendar";
 import { EmployeeKanban } from "@/components/tasks/employee-kanban";
 import { TareaFechaLimiteBadge } from "@/components/tasks/tarea-fecha-limite";
 import { PageHeader } from "@/components/layout/page-header";
@@ -63,7 +64,7 @@ export function TareasView() {
   const [role, setRole] = useState<string | null>(null);
   const [isManager, setIsManager] = useState(false);
   const [areaNombre, setAreaNombre] = useState<string>();
-  const [vista, setVista] = useState<"kanban" | "lista">("kanban");
+  const [vista, setVista] = useState<"kanban" | "lista" | "calendario">("kanban");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -187,7 +188,7 @@ export function TareasView() {
         }
         description={
           isManager
-            ? "Kanban del equipo, asignaciones y seguimiento de vencimientos"
+            ? "Kanban, calendario y seguimiento de vencimientos del equipo"
             : "Tu tablero personal de trabajo"
         }
       />
@@ -244,6 +245,15 @@ export function TareasView() {
                 >
                   <LayoutGrid className="mr-2 h-4 w-4" />
                   Kanban
+                </Button>
+                <Button
+                  variant={vista === "calendario" ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-xl bg-white/80"
+                  onClick={() => setVista("calendario")}
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  Calendario
                 </Button>
                 <Button
                   variant={vista === "lista" ? "default" : "outline"}
@@ -309,6 +319,11 @@ export function TareasView() {
                 soloVencidas={soloVencidas}
               />
             )
+          ) : vista === "calendario" && isManager ? (
+            <ManagerTaskCalendar
+              tareas={tareasVisibles}
+              onRefresh={loadTareas}
+            />
           ) : (
             <>
               <div className="mb-4 flex flex-wrap gap-2">
