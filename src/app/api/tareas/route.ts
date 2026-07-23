@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
       if (ownershipError) return ownershipError;
     }
 
+    const now = new Date();
     const tarea = await prisma.tarea.create({
       data: {
         titulo: parsed.data.titulo,
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
         prioridad: parsed.data.prioridad ?? 2,
         objetivoId: parsed.data.objetivoId,
         userId: targetUserId,
+        assignedAt: now,
         fechaLimite: parsed.data.fechaLimite
           ? new Date(parsed.data.fechaLimite)
           : undefined,

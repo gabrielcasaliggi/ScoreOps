@@ -18,8 +18,13 @@ import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { AiInsightsPanel } from "@/components/dashboard/ai-insights-panel";
+import {
+  LatencyMetricsPanel,
+  latencyCell,
+} from "@/components/dashboard/latency-metrics-panel";
 import { formatPercent } from "@/lib/utils";
 import { labelEstadoTarea } from "@/lib/task-utils";
+import type { AggregatedLatencies } from "@/lib/task-latency";
 
 interface OperationsData {
   alcance: { tipo: "area"; areaNombre: string } | { tipo: "global" };
@@ -34,6 +39,7 @@ interface OperationsData {
     objetivosEnRiesgo: number;
     kpiPromedioEquipo: number;
   };
+  latencias: AggregatedLatencies;
   tareasUrgentes: {
     id: string;
     titulo: string;
@@ -62,6 +68,7 @@ interface OperationsData {
     tareasVencidas: number;
     objetivosActivos: number;
     kpiPromedio: number;
+    latencias: AggregatedLatencies;
   }[];
   porArea?: {
     areaId: string;
@@ -196,6 +203,8 @@ export function OperationsDashboard({
           </div>
         ))}
       </div>
+
+      <LatencyMetricsPanel latencias={data.latencias} />
 
       {tieneFoco && (
         <div className="dash-focus-strip flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
@@ -396,6 +405,9 @@ export function OperationsDashboard({
                 <th className="pb-2 text-right">Vencidas</th>
                 <th className="pb-2 text-right">Objetivos</th>
                 <th className="pb-2 text-right">KPI</th>
+                <th className="pb-2 text-right" title="Ciclo total promedio (asignación → cierre)">
+                  Ciclo
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -420,6 +432,9 @@ export function OperationsDashboard({
                   </td>
                   <td className="py-3 text-right tabular-nums">{p.objetivosActivos}</td>
                   <td className="py-3 text-right tabular-nums">{formatPercent(p.kpiPromedio)}</td>
+                  <td className="py-3 text-right tabular-nums text-muted-foreground">
+                    {latencyCell(p.latencias)}
+                  </td>
                 </tr>
               ))}
             </tbody>

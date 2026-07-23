@@ -11,6 +11,7 @@ import { PremioFormulaExplainer } from "@/components/dashboard/premio-formula-ex
 import { BenchmarkPanel } from "@/components/dashboard/benchmark-panel";
 import type { EmployeeProductivity } from "@/lib/productivity";
 import { formatPercent } from "@/lib/utils";
+import type { AggregatedLatencies } from "@/lib/task-latency";
 
 interface AreaOption {
   id: string;
@@ -26,7 +27,8 @@ interface EquipoStatsResponse {
     tareasEvaluablesCompletadas?: number;
     puntajePremioPromedio?: number;
   };
-  empleados: EmployeeProductivity[];
+  latencias: AggregatedLatencies;
+  empleados: (EmployeeProductivity & { latencias?: AggregatedLatencies })[];
   porArea?: { area: string; empleados: number; puntajePromedio: number }[];
   periodo: {
     id: string;
@@ -268,6 +270,7 @@ export function CoordinatorDashboard({
         <TeamDashboard
           resumen={data.resumen}
           empleados={data.empleados}
+          latencias={data.latencias}
           porArea={data.porArea}
           periodoLabel={data.periodo.label}
         />

@@ -5,6 +5,10 @@ import { calculateKpiCompliance } from "./productivity";
 import { getPremioTemplateMeta } from "./premio-templates";
 import { getPremioTemplate } from "./system-config";
 import type { Tarea } from "@prisma/client";
+import {
+  aggregateLatenciesForPeriod,
+  type AggregatedLatencies,
+} from "./task-latency";
 
 type TareaLite = Pick<
   Tarea,
@@ -44,6 +48,7 @@ export interface AreaExecutiveRow {
   tareasCompletadas: number;
   puntualidadPct: number;
   altaPrioridadAbiertas: number;
+  latencias: AggregatedLatencies;
 }
 
 export interface PersonaExecutiveRow {
@@ -62,6 +67,7 @@ export interface PersonaExecutiveRow {
   puntualidadPct: number;
   altaPrioridadAbiertas: number;
   alerta: "sobrecarga" | "vencidas" | "kpi_bajo" | null;
+  latencias: AggregatedLatencies;
 }
 
 export interface ExecutiveReport {
@@ -82,6 +88,7 @@ export interface ExecutiveReport {
   };
   pipeline: TaskPipeline;
   calidadTareas: TaskQualityMetrics;
+  latencias: AggregatedLatencies;
   porArea: AreaExecutiveRow[];
   porPersona: PersonaExecutiveRow[];
   distribucionCarga: {
@@ -215,6 +222,7 @@ export async function buildExecutiveReport(organizationId: string): Promise<Exec
 
   const pipeline = buildPipeline(allTareas, now);
   const calidadTareas = buildQuality(allTareas);
+  const latencias = aggregateLatenciesForPeriod(allTareas, period);
 
   const objetivosActivos = empleados.flatMap((e) => e.objetivos);
   const objetivosEnRiesgo = objetivosActivos.filter((o) => {
@@ -272,6 +280,7 @@ export async function buildExecutiveReport(organizationId: string): Promise<Exec
       tareasCompletadas: pipe.completadas,
       puntualidadPct: quality.puntualidadPct,
       altaPrioridadAbiertas: pipe.altaPrioridadAbiertas,
+      latencias: aggregateLatenciesForPeriod(tareas, period),
     };
   });
 
@@ -295,6 +304,7 @@ export async function buildExecutiveReport(organizationId: string): Promise<Exec
         tareasCompletadas: pipe.completadas,
         puntualidadPct: quality.puntualidadPct,
         altaPrioridadAbiertas: pipe.altaPrioridadAbiertas,
+        latencias: aggregateLatenciesForPeriod(emp.tareas, period),
         alerta: personaAlerta({
           tareasAbiertas: pipe.abiertas,
           tareasVencidas: pipe.vencidas,
@@ -357,6 +367,7 @@ export async function buildExecutiveReport(organizationId: string): Promise<Exec
     },
     pipeline,
     calidadTareas,
+    latencias,
     porArea,
     porPersona,
     distribucionCarga: {

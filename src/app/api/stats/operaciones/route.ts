@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { calculateKpiCompliance } from "@/lib/productivity";
+import { getSemesterPeriod } from "@/lib/productivity-period";
+import { aggregateLatenciesForPeriod } from "@/lib/task-latency";
 
 export async function GET() {
   const { error, user } = await requireAuth(["ADMINISTRADOR", "GERENTE"]);
@@ -110,6 +112,9 @@ export async function GET() {
       .filter((t, i, arr) => arr.findIndex((x) => x.id === t.id) === i)
       .slice(0, 10);
 
+    const period = getSemesterPeriod();
+    const latencias = aggregateLatenciesForPeriod(tareas, period);
+
     const porPersona = empleados.map((e) => {
       const tareasPersona = tareas.filter((t) => t.userId === e.id);
       const abiertas = tareasPersona.filter((t) => t.estado !== "COMPLETADA");
@@ -129,6 +134,7 @@ export async function GET() {
         tareasVencidas: abiertas.filter((t) => t.fechaLimite && t.fechaLimite < now).length,
         objetivosActivos: objs.length,
         kpiPromedio,
+        latencias: aggregateLatenciesForPeriod(tareasPersona, period),
       };
     });
 
@@ -197,6 +203,7 @@ export async function GET() {
         user: o.user,
         proximoVencer: o.fechaFin <= soon,
       })),
+      latencias,
       porPersona: porPersona.sort((a, b) => b.tareasAbiertas - a.tareasAbiertas),
       porArea,
       actualizadoEn: now.toISOString(),

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { buildEmployeeProductivity } from "@/lib/employee-stats";
 import { calculateKpiCompliance } from "@/lib/productivity";
 import { parsePeriodoParam, periodoToApiPayload, getSemesterPeriod } from "@/lib/productivity-period";
+import { aggregateLatenciesForPeriod } from "@/lib/task-latency";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 
 const OBJETIVO_DIAS_ALERTA = 7;
@@ -67,6 +68,8 @@ export async function GET(request: NextRequest) {
       take: 30,
     });
 
+    const latencias = aggregateLatenciesForPeriod(empleado.tareas, period);
+
     return apiSuccess({
       user: {
         id: empleado.id,
@@ -78,6 +81,7 @@ export async function GET(request: NextRequest) {
       ...productivity,
       puntajePremio: productivity.productivityBonus.puntajePremio,
       tareasPorEstado,
+      latencias,
       periodo: periodoToApiPayload(period),
       objetivos: objetivosEnPeriodo.map((o) => {
         const kpis = o.kpis.map(calculateKpiCompliance);

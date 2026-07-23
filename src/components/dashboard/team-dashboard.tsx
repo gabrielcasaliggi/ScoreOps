@@ -36,11 +36,19 @@ import {
 import type { EmployeeProductivity } from "@/lib/productivity";
 import { formatPremioResumen } from "@/lib/premio-formula";
 import { PremioFormulaExplainer } from "@/components/dashboard/premio-formula-explainer";
+import {
+  LatencyMetricsPanel,
+  latencyCell,
+} from "@/components/dashboard/latency-metrics-panel";
 import { cn, formatPercent, getInitials } from "@/lib/utils";
+import type { AggregatedLatencies } from "@/lib/task-latency";
+import { formatLatencyMinutes } from "@/lib/task-latency";
 
 const PREMIO_UMBRAL_INTERVENCION = 20;
 
-type EmpleadoPremio = EmployeeProductivity;
+type EmpleadoPremio = EmployeeProductivity & {
+  latencias?: AggregatedLatencies;
+};
 
 interface TeamDashboardProps {
   resumen: {
@@ -51,6 +59,7 @@ interface TeamDashboardProps {
     puntajePremioPromedio?: number;
   };
   empleados: EmpleadoPremio[];
+  latencias?: AggregatedLatencies;
   porArea?: { area: string; empleados: number; puntajePromedio: number }[];
   periodoLabel?: string;
 }
@@ -65,6 +74,7 @@ function rankPodiumClass(index: number): string {
 export function TeamDashboard({
   resumen,
   empleados,
+  latencias,
   porArea: porAreaProp,
   periodoLabel,
 }: TeamDashboardProps) {
@@ -235,6 +245,8 @@ export function TeamDashboard({
           variant="slate"
         />
       </div>
+
+      {latencias && <LatencyMetricsPanel latencias={latencias} />}
 
       <PremioFormulaExplainer compact />
 
@@ -458,6 +470,12 @@ export function TeamDashboard({
                   <th className="px-5 py-3 text-left">Área</th>
                   <th className="px-5 py-3 text-right">KPI</th>
                   <th className="px-5 py-3 text-right">Eficiencia</th>
+                  <th
+                    className="px-5 py-3 text-right"
+                    title="Ciclo total promedio (asignación → cierre)"
+                  >
+                    Ciclo
+                  </th>
                   <th className="px-5 py-3 text-right" title="Tramos activos: a base, b asistencia, c–e metas de equipo">
                     Tramos a–e
                   </th>
@@ -484,6 +502,16 @@ export function TeamDashboard({
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums">
                       {formatPercent(e.productivityBonus.eficienciaEvaluable)}
+                    </td>
+                    <td
+                      className="px-5 py-3.5 text-right tabular-nums text-muted-foreground"
+                      title={
+                        e.latencias
+                          ? `Inicio ${formatLatencyMinutes(e.latencias.demoraInicio.avg)} · Activo ${formatLatencyMinutes(e.latencias.tiempoActivo.avg)}`
+                          : undefined
+                      }
+                    >
+                      {latencyCell(e.latencias)}
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-muted-foreground font-mono text-xs">
                       {e.productivityBonus.art49

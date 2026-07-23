@@ -21,6 +21,7 @@ const updateTareaSchema = z.object({
   tiempoReal: z.number().int().positive().optional(),
   prioridad: z.number().int().min(1).max(3).optional(),
   objetivoId: z.string().nullable().optional(),
+  userId: z.string().optional(),
   fechaLimite: z.string().datetime().nullable().optional(),
   evaluaProductividad: z.boolean().optional(),
   pesoProductividad: z.number().int().min(1).max(3).optional(),
@@ -74,6 +75,25 @@ export async function PATCH(
     if (user.role === "EMPLEADO") {
       delete data.evaluaProductividad;
       delete data.pesoProductividad;
+      delete data.userId;
+    }
+
+    if (
+      parsed.data.userId &&
+      parsed.data.userId !== existing.userId &&
+      user.role !== "EMPLEADO"
+    ) {
+      const target = await findUserInOrg(user.organizationId, parsed.data.userId);
+      if (!target) {
+        return apiError("Empleado no encontrado", 404);
+      }
+      if (user.role === "GERENTE" && target.areaId !== user.areaId) {
+        return apiError("Sin permisos para asignar fuera de tu área", 403);
+      }
+      data.userId = parsed.data.userId;
+      data.assignedAt = new Date();
+    } else {
+      delete data.userId;
     }
 
     let workflowCreated = false;

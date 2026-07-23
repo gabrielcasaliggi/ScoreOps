@@ -8,6 +8,7 @@ import {
 } from "@/lib/productivity-period";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { findAreaInOrg } from "@/lib/tenant";
+import { aggregateLatenciesForPeriod } from "@/lib/task-latency";
 
 export async function GET(request: NextRequest) {
   const { error, user } = await requireAuth(["ADMINISTRADOR", "GERENTE"]);
@@ -57,46 +58,69 @@ export async function GET(request: NextRequest) {
       empleados.map((e) => buildEmployeeProductivity(e, period))
     );
 
-    const rankingPremio = [...stats]
+    const empleadosConLatencias = stats.map((s) => {
+      const emp = empleados.find((e) => e.id === s.userId)!;
+      return {
+        ...s,
+        latencias: aggregateLatenciesForPeriod(emp.tareas, period),
+      };
+    });
+
+    const latencias = aggregateLatenciesForPeriod(
+      empleados.flatMap((e) => e.tareas),
+      period
+    );
+
+    const rankingPremio = [...empleadosConLatencias]
       .sort((a, b) => b.productivityBonus.puntajePremio - a.productivityBonus.puntajePremio)
       .map((e, i) => ({ posicion: i + 1, ...e }));
 
     const resumen = {
-      totalEmpleados: stats.length,
+      totalEmpleados: empleadosConLatencias.length,
       kpiPromedioEquipo:
-        stats.length > 0
+        empleadosConLatencias.length > 0
           ? Math.round(
-              (stats.reduce((s, e) => s + e.kpiPromedio, 0) / stats.length) * 10
-            ) / 10
-          : 0,
-      eficienciaPromedioEquipo:
-        stats.length > 0
-          ? Math.round(
-              (stats.reduce((s, e) => s + e.productivityBonus.eficienciaEvaluable, 0) /
-                stats.length) *
+              (empleadosConLatencias.reduce((s, e) => s + e.kpiPromedio, 0) /
+                empleadosConLatencias.length) *
                 10
             ) / 10
           : 0,
-      tareasCompletadas: stats.reduce(
+      eficienciaPromedioEquipo:
+        empleadosConLatencias.length > 0
+          ? Math.round(
+              (empleadosConLatencias.reduce(
+                (s, e) => s + e.productivityBonus.eficienciaEvaluable,
+                0
+              ) /
+                empleadosConLatencias.length) *
+                10
+            ) / 10
+          : 0,
+      tareasCompletadas: empleadosConLatencias.reduce(
         (s, e) => s + e.temporalEfficiency.tareasCompletadas,
         0
       ),
-      tareasEvaluablesCompletadas: stats.reduce(
+      tareasEvaluablesCompletadas: empleadosConLatencias.reduce(
         (s, e) => s + e.productivityBonus.tareasEvaluablesCompletadas,
         0
       ),
       puntajePremioPromedio:
-        stats.length > 0
+        empleadosConLatencias.length > 0
           ? Math.round(
-              (stats.reduce((s, e) => s + e.productivityBonus.puntajePremio, 0) /
-                stats.length) *
+              (empleadosConLatencias.reduce(
+                (s, e) => s + e.productivityBonus.puntajePremio,
+                0
+              ) /
+                empleadosConLatencias.length) *
                 10
             ) / 10
           : 0,
     };
 
     const porArea = Object.entries(
-      stats.reduce<Record<string, { empleados: number; puntaje: number }>>((acc, e) => {
+      empleadosConLatencias.reduce<
+        Record<string, { empleados: number; puntaje: number }>
+      >((acc, e) => {
         if (!acc[e.area]) acc[e.area] = { empleados: 0, puntaje: 0 };
         acc[e.area].empleados += 1;
         acc[e.area].puntaje += e.productivityBonus.puntajePremio;
@@ -110,7 +134,8 @@ export async function GET(request: NextRequest) {
 
     return apiSuccess({
       resumen,
-      empleados: stats,
+      latencias,
+      empleados: empleadosConLatencias,
       rankingPremio,
       porArea,
       periodo: periodoToApiPayload(period),

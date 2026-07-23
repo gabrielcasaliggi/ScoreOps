@@ -31,6 +31,10 @@ import { StatCard } from "@/components/ui/stat-card";
 import { DashboardSkeleton } from "@/components/ui/dashboard-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
+  LatencyMetricsPanel,
+  latencyCell,
+} from "@/components/dashboard/latency-metrics-panel";
+import {
   CHART,
   ChartGradientDefs,
   ChartTooltip,
@@ -39,6 +43,7 @@ import {
 } from "@/lib/chart-theme";
 import { formatPercent } from "@/lib/utils";
 import type { ExecutiveReport } from "@/lib/executive-stats";
+import { formatLatencyMinutes } from "@/lib/task-latency";
 
 const SALUD_VARIANT: Record<string, "emerald" | "amber" | "danger"> = {
   Saludable: "emerald",
@@ -222,6 +227,8 @@ export function ExecutiveDashboard() {
         />
       </div>
 
+      <LatencyMetricsPanel latencias={data.latencias} />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="dash-panel border-0 shadow-none">
           <CardHeader>
@@ -303,6 +310,9 @@ export function ExecutiveDashboard() {
                 <th className="pb-2 text-right">Venc.</th>
                 <th className="pb-2 text-right">Hechas</th>
                 <th className="pb-2 text-right">Puntual.</th>
+                <th className="pb-2 text-right" title="Ciclo total promedio">
+                  Ciclo
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -324,6 +334,12 @@ export function ExecutiveDashboard() {
                   </td>
                   <td className="py-3 text-right tabular-nums">{a.tareasCompletadas}</td>
                   <td className="py-3 text-right tabular-nums">{a.puntualidadPct}%</td>
+                  <td
+                    className="py-3 text-right tabular-nums text-muted-foreground"
+                    title={`Inicio ${formatLatencyMinutes(a.latencias.demoraInicio.avg)} · Activo ${formatLatencyMinutes(a.latencias.tiempoActivo.avg)}`}
+                  >
+                    {latencyCell(a.latencias)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -474,6 +490,9 @@ export function ExecutiveDashboard() {
                 <th className="pb-2 text-right">Venc.</th>
                 <th className="pb-2 text-right">Hechas</th>
                 <th className="pb-2 text-right">Puntual.</th>
+                <th className="pb-2 text-right" title="Ciclo total promedio">
+                  Ciclo
+                </th>
                 <th className="pb-2 text-right">Alerta</th>
                 <th className="pb-2 text-right" />
               </tr>
@@ -499,6 +518,12 @@ export function ExecutiveDashboard() {
                   </td>
                   <td className="py-3 text-right tabular-nums">{p.tareasCompletadas}</td>
                   <td className="py-3 text-right tabular-nums">{p.puntualidadPct}%</td>
+                  <td
+                    className="py-3 text-right tabular-nums text-muted-foreground"
+                    title={`Inicio ${formatLatencyMinutes(p.latencias.demoraInicio.avg)} · Activo ${formatLatencyMinutes(p.latencias.tiempoActivo.avg)}`}
+                  >
+                    {latencyCell(p.latencias)}
+                  </td>
                   <td className="py-3 text-right">
                     {p.alerta ? (
                       <Badge variant={p.alerta === "vencidas" ? "destructive" : "warning"}>

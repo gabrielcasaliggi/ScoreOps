@@ -19,6 +19,7 @@ export default function DashboardPage() {
     productivityBonus: Parameters<typeof EmployeeDashboard>[0]["productivityBonus"];
     periodo: Parameters<typeof EmployeeDashboard>[0]["periodo"];
     tareasPorEstado: Parameters<typeof EmployeeDashboard>[0]["tareasPorEstado"];
+    latencias: Parameters<typeof EmployeeDashboard>[0]["latencias"];
     objetivos: Parameters<typeof EmployeeDashboard>[0]["objetivos"];
     comparacion: Parameters<typeof EmployeeDashboard>[0]["comparacion"];
   } | null>(null);
@@ -66,6 +67,7 @@ export default function DashboardPage() {
         productivityBonus: stats.productivityBonus,
         periodo: stats.periodo,
         tareasPorEstado: stats.tareasPorEstado,
+        latencias: stats.latencias,
         objetivos: stats.objetivos ?? [],
         comparacion: stats.comparacion ?? null,
       });

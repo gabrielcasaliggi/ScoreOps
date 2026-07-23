@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PremioArt49Breakdown } from "@/components/dashboard/premio-art49-breakdown";
 import { PremioExplainerPanel } from "@/components/dashboard/premio-explainer-panel";
 import { BenchmarkPanel } from "@/components/dashboard/benchmark-panel";
+import { LatencyMetricsPanel } from "@/components/dashboard/latency-metrics-panel";
 import { EmployeeObjetivosPanel, type ObjetivoResumen } from "@/components/dashboard/employee-objetivos-panel";
 import { EmployeeKpiPanel } from "@/components/dashboard/employee-kpi-panel";
 import { TareaFechaLimiteBadge } from "@/components/tasks/tarea-fecha-limite";
@@ -16,6 +17,7 @@ import { formatPercent } from "@/lib/utils";
 import { getTareaLimiteStatus, labelEstadoTarea } from "@/lib/task-utils";
 import type { PremioArt49 } from "@/lib/art49-types";
 import type { EmployeeTarea } from "@/components/tasks/employee-kanban";
+import type { AggregatedLatencies } from "@/lib/task-latency";
 
 interface KpiItem {
   kpiId: string;
@@ -51,6 +53,7 @@ interface EmployeeDashboardProps {
     liquidacionPendiente: boolean;
   };
   tareasPorEstado: { pendiente: number; enProceso: number; completada: number };
+  latencias?: AggregatedLatencies;
   tareas: EmployeeTarea[];
   objetivos?: ObjetivoResumen[];
   comparacion?: {
@@ -72,6 +75,7 @@ export function EmployeeDashboard({
   productivityBonus,
   periodo,
   tareasPorEstado,
+  latencias,
   tareas,
   objetivos = [],
   comparacion,
@@ -138,6 +142,8 @@ export function EmployeeDashboard({
           />
         )}
       </div>
+
+      {latencias && <LatencyMetricsPanel latencias={latencias} />}
 
       <div className="dash-panel p-5 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">

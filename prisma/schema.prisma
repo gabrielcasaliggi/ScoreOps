@@ -249,6 +249,7 @@ model Tarea {
   fechaLimite         DateTime?
   startedAt           DateTime?
   completedAt         DateTime?
+  assignedAt          DateTime   @default(now())
   evaluaProductividad Boolean    @default(true)
   pesoProductividad   Int        @default(1)
   userId              String
