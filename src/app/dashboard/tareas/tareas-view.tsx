@@ -249,7 +249,7 @@ export function TareasView() {
                 <Button
                   variant={vista === "calendario" ? "default" : "outline"}
                   size="sm"
-                  className="rounded-xl bg-white/80"
+                  className="rounded-xl"
                   onClick={() => setVista("calendario")}
                 >
                   <CalendarDays className="mr-2 h-4 w-4" />
@@ -258,7 +258,7 @@ export function TareasView() {
                 <Button
                   variant={vista === "lista" ? "default" : "outline"}
                   size="sm"
-                  className="rounded-xl bg-white/80"
+                  className="rounded-xl"
                   onClick={() => setVista("lista")}
                 >
                   <List className="mr-2 h-4 w-4" />
@@ -292,7 +292,7 @@ export function TareasView() {
                 <Button
                   variant={vista === "lista" ? "default" : "outline"}
                   size="sm"
-                  className="rounded-xl bg-white/80"
+                  className="rounded-xl"
                   onClick={() => setVista("lista")}
                 >
                   <List className="mr-2 h-4 w-4" />
