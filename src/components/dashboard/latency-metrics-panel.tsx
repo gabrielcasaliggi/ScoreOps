@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Timer } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
   type AggregatedLatencies,
   type TaskLatencyRow,
 } from "@/lib/task-latency";
+import { badgeVariantEstadoTarea, labelEstadoTarea } from "@/lib/task-utils";
 import { cn } from "@/lib/utils";
 
 interface LatencyMetricsPanelProps {
@@ -82,6 +84,7 @@ export function LatencyMetricsPanel({
 }: LatencyMetricsPanelProps) {
   const [showAll, setShowAll] = useState(false);
   const hasDetalle = (latencias.porTarea?.length ?? 0) > 0;
+  const abiertasCount = latencias.abiertasCount ?? 0;
 
   const visibleRows = useMemo(() => {
     const rows = latencias.porTarea ?? [];
@@ -89,7 +92,7 @@ export function LatencyMetricsPanel({
     return rows.slice(0, 8);
   }, [latencias.porTarea, showAll]);
 
-  if (latencias.count === 0) {
+  if (latencias.count === 0 && abiertasCount === 0 && !hasDetalle) {
     return (
       <Card className="dash-panel border-0 shadow-none">
         <CardHeader>
@@ -101,8 +104,8 @@ export function LatencyMetricsPanel({
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Sin tareas completadas en el período. Los tiempos se miden cuando una tarea pasa por
-            Pendiente → En proceso → Completada.
+            Sin tareas en el período. Las abiertas aparecen apenas se asignan; los promedios se
+            calculan con las completadas (Pendiente → En proceso → Completada).
           </p>
         </CardContent>
       </Card>
@@ -124,78 +127,92 @@ export function LatencyMetricsPanel({
           {title}
         </CardTitle>
         <CardDescription>
-          {description} · {latencias.count} tarea{latencias.count === 1 ? "" : "s"} completada
-          {latencias.count === 1 ? "" : "s"}
+          {description}
+          {latencias.count > 0
+            ? ` · ${latencias.count} completada${latencias.count === 1 ? "" : "s"}`
+            : ""}
+          {abiertasCount > 0
+            ? ` · ${abiertasCount} abierta${abiertasCount === 1 ? "" : "s"} en curso`
+            : ""}
           {latencias.conInicioMedible > 0
             ? ` · ${latencias.conInicioMedible} con inicio medible`
             : ""}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="overflow-x-auto">
-          <div className="flex min-w-[520px] items-center gap-2 text-xs sm:gap-3">
-            <span className="shrink-0 rounded-lg bg-slate-100 px-2.5 py-1.5 font-semibold text-slate-700">
-              Asignada
-            </span>
-            <div className="h-px flex-1 bg-amber-300" />
-            <span className="shrink-0 text-center font-medium text-amber-800">
-              Espera
-              <span className="mt-0.5 block text-[11px] tabular-nums text-amber-700">
-                {ociosoLabel}
+        {latencias.count > 0 && (
+          <div className="overflow-x-auto">
+            <div className="flex min-w-[520px] items-center gap-2 text-xs sm:gap-3">
+              <span className="shrink-0 rounded-lg bg-slate-100 px-2.5 py-1.5 font-semibold text-slate-700">
+                Asignada
               </span>
-            </span>
-            <div className="h-px flex-1 bg-amber-300" />
-            <span className="shrink-0 rounded-lg bg-blue-100 px-2.5 py-1.5 font-semibold text-blue-800">
-              En proceso
-            </span>
-            <div className="h-px flex-1 bg-blue-300" />
-            <span className="shrink-0 text-center font-medium text-blue-800">
-              Resolviendo
-              <span className="mt-0.5 block text-[11px] tabular-nums text-blue-700">
-                {activoLabel}
+              <div className="h-px flex-1 bg-amber-300" />
+              <span className="shrink-0 text-center font-medium text-amber-800">
+                Espera
+                <span className="mt-0.5 block text-[11px] tabular-nums text-amber-700">
+                  {ociosoLabel}
+                </span>
               </span>
-            </span>
-            <div className="h-px flex-1 bg-emerald-300" />
-            <span className="shrink-0 rounded-lg bg-emerald-100 px-2.5 py-1.5 font-semibold text-emerald-800">
-              Completada
-            </span>
+              <div className="h-px flex-1 bg-amber-300" />
+              <span className="shrink-0 rounded-lg bg-blue-100 px-2.5 py-1.5 font-semibold text-blue-800">
+                En proceso
+              </span>
+              <div className="h-px flex-1 bg-blue-300" />
+              <span className="shrink-0 text-center font-medium text-blue-800">
+                Resolviendo
+                <span className="mt-0.5 block text-[11px] tabular-nums text-blue-700">
+                  {activoLabel}
+                </span>
+              </span>
+              <div className="h-px flex-1 bg-emerald-300" />
+              <span className="shrink-0 rounded-lg bg-emerald-100 px-2.5 py-1.5 font-semibold text-emerald-800">
+                Completada
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Stage
-            label="Tardó en comenzar"
-            value={ociosoLabel}
-            sub={
-              latencias.demoraInicio.median != null
-                ? `Mediana ${formatLatencyMinutes(latencias.demoraInicio.median)} · tiempo en cola`
-                : "Tiempo ocioso / en cola antes de empezar"
-            }
-            tone="amber"
-          />
-          <Stage
-            label="Estuvo resolviendo"
-            value={activoLabel}
-            sub={
-              latencias.tiempoActivo.median != null
-                ? `Mediana ${formatLatencyMinutes(latencias.tiempoActivo.median)} · trabajo activo`
-                : "Tiempo en En proceso hasta el cierre"
-            }
-            tone="blue"
-          />
-          <Stage
-            label="Ciclo total"
-            value={totalLabel}
-            sub={
-              latencias.tiempoTotal.median != null
-                ? `Mediana ${formatLatencyMinutes(latencias.tiempoTotal.median)} · asignación → cierre`
-                : "Desde que la recibió hasta terminarla"
-            }
-            tone="emerald"
-          />
-        </div>
+        {latencias.count > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Stage
+              label="Tardó en comenzar"
+              value={ociosoLabel}
+              sub={
+                latencias.demoraInicio.median != null
+                  ? `Mediana ${formatLatencyMinutes(latencias.demoraInicio.median)} · tiempo en cola`
+                  : "Tiempo ocioso / en cola antes de empezar"
+              }
+              tone="amber"
+            />
+            <Stage
+              label="Estuvo resolviendo"
+              value={activoLabel}
+              sub={
+                latencias.tiempoActivo.median != null
+                  ? `Mediana ${formatLatencyMinutes(latencias.tiempoActivo.median)} · trabajo activo`
+                  : "Tiempo en En proceso hasta el cierre"
+              }
+              tone="blue"
+            />
+            <Stage
+              label="Ciclo total"
+              value={totalLabel}
+              sub={
+                latencias.tiempoTotal.median != null
+                  ? `Mediana ${formatLatencyMinutes(latencias.tiempoTotal.median)} · asignación → cierre`
+                  : "Desde que la recibió hasta terminarla"
+              }
+              tone="emerald"
+            />
+          </div>
+        ) : (
+          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3.5 py-3 text-sm text-muted-foreground">
+            Todavía no hay tareas completadas en el período. Abajo ves las abiertas con el tiempo
+            que llevan desde la asignación.
+          </p>
+        )}
 
-        {(ociosoPct > 0 || activoPct > 0) && (
+        {latencias.count > 0 && (ociosoPct > 0 || activoPct > 0) && (
           <div>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
               <p className="font-medium text-slate-700">Composición del ciclo</p>
@@ -241,15 +258,16 @@ export function LatencyMetricsPanel({
               <div>
                 <p className="text-sm font-semibold text-slate-800">Detalle por tarea</p>
                 <p className="text-xs text-muted-foreground">
-                  Espera, tiempo resolviendo y ciclo de cada tarea completada
+                  Abiertas en curso y completadas: espera, resolviendo y ciclo
                 </p>
               </div>
             </div>
             <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-              <table className="data-table w-full min-w-[640px] text-sm">
+              <table className="data-table w-full min-w-[720px] text-sm">
                 <thead>
                   <tr className="border-b bg-slate-50/80 text-left text-xs text-muted-foreground">
                     <th className="px-3 py-2.5 font-semibold">Tarea</th>
+                    <th className="px-3 py-2.5 font-semibold">Estado</th>
                     {showUserCol && (
                       <th className="px-3 py-2.5 font-semibold">Empleado</th>
                     )}
@@ -263,9 +281,20 @@ export function LatencyMetricsPanel({
                 </thead>
                 <tbody>
                   {visibleRows.map((row) => (
-                    <tr key={row.id} className="border-b border-border/50 last:border-0">
-                      <td className="max-w-[220px] truncate px-3 py-2.5 font-medium" title={row.titulo}>
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        "border-b border-border/50 last:border-0",
+                        row.enCurso && "bg-amber-50/40"
+                      )}
+                    >
+                      <td className="max-w-[200px] truncate px-3 py-2.5 font-medium" title={row.titulo}>
                         {row.titulo}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <Badge variant={badgeVariantEstadoTarea(row.estado)} className="text-[10px]">
+                          {labelEstadoTarea(row.estado)}
+                        </Badge>
                       </td>
                       {showUserCol && (
                         <td className="px-3 py-2.5 text-muted-foreground">
@@ -274,6 +303,9 @@ export function LatencyMetricsPanel({
                       )}
                       <td className="px-3 py-2.5 text-right tabular-nums text-amber-800">
                         {formatLatencyMinutes(row.tiempoOciosoMin)}
+                        {row.enCurso && row.estado === "PENDIENTE" ? (
+                          <span className="ml-1 text-[10px] text-amber-600">↓</span>
+                        ) : null}
                       </td>
                       <td className="px-3 py-2.5 text-right tabular-nums text-blue-800">
                         {formatLatencyMinutes(row.tiempoActivoMin)}
@@ -284,11 +316,15 @@ export function LatencyMetricsPanel({
                       <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
                         {row.pctOcioso != null ? `${row.pctOcioso}%` : "—"}
                       </td>
-                      <td className="px-3 py-2.5 w-28">
+                      <td className="w-28 px-3 py-2.5">
                         <MiniBar row={row} />
                       </td>
                       <td className="px-3 py-2.5 text-right tabular-nums text-xs text-muted-foreground">
-                        {formatShortDate(row.completedAt)}
+                        {row.enCurso
+                          ? "En curso"
+                          : row.completedAt
+                            ? formatShortDate(row.completedAt)
+                            : "—"}
                       </td>
                     </tr>
                   ))}
@@ -319,8 +355,9 @@ export function LatencyMetricsPanel({
         )}
 
         <p className="text-xs text-muted-foreground">
-          Para medir bien la espera, la tarea debe pasar por <strong>En proceso</strong> antes de
-          completarse. El ciclo total incluye también el tiempo en aprobación, si aplica.
+          Las abiertas muestran tiempos hasta ahora. Los promedios del encabezado solo usan
+          completadas. Para medir bien la espera, la tarea debe pasar por{" "}
+          <strong>En proceso</strong> antes de cerrarse.
         </p>
       </CardContent>
     </Card>
