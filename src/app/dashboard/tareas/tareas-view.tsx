@@ -322,6 +322,8 @@ export function TareasView() {
           ) : vista === "calendario" && isManager ? (
             <ManagerTaskCalendar
               tareas={tareasVisibles}
+              usuarios={usuarios}
+              objetivos={objetivos}
               onRefresh={loadTareas}
             />
           ) : (
