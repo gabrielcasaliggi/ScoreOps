@@ -62,12 +62,18 @@ export async function GET(request: NextRequest) {
       const emp = empleados.find((e) => e.id === s.userId)!;
       return {
         ...s,
-        latencias: aggregateLatenciesForPeriod(emp.tareas, period),
+        latencias: aggregateLatenciesForPeriod(emp.tareas, period, { detalleLimit: 0 }),
       };
     });
 
     const latencias = aggregateLatenciesForPeriod(
-      empleados.flatMap((e) => e.tareas),
+      empleados.flatMap((e) =>
+        e.tareas.map((t) => ({
+          ...t,
+          userId: e.id,
+          user: { nombre: e.nombre, apellido: e.apellido },
+        }))
+      ),
       period
     );
 

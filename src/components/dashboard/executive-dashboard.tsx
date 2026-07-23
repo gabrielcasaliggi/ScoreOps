@@ -227,7 +227,7 @@ export function ExecutiveDashboard() {
         />
       </div>
 
-      <LatencyMetricsPanel latencias={data.latencias} />
+      <LatencyMetricsPanel latencias={data.latencias} showUser />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="dash-panel border-0 shadow-none">

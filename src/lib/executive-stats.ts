@@ -198,7 +198,13 @@ export async function buildExecutiveReport(organizationId: string): Promise<Exec
   ]);
 
   const stats = await Promise.all(empleados.map((e) => buildEmployeeProductivity(e, period)));
-  const allTareas = empleados.flatMap((e) => e.tareas);
+  const allTareas = empleados.flatMap((e) =>
+    e.tareas.map((t) => ({
+      ...t,
+      userId: e.id,
+      user: { nombre: e.nombre, apellido: e.apellido },
+    }))
+  );
 
   const kpiPromedioOrg =
     stats.length > 0
@@ -280,7 +286,17 @@ export async function buildExecutiveReport(organizationId: string): Promise<Exec
       tareasCompletadas: pipe.completadas,
       puntualidadPct: quality.puntualidadPct,
       altaPrioridadAbiertas: pipe.altaPrioridadAbiertas,
-      latencias: aggregateLatenciesForPeriod(tareas, period),
+      latencias: aggregateLatenciesForPeriod(
+        areaEmpleados.flatMap((e) =>
+          e.tareas.map((t) => ({
+            ...t,
+            userId: e.id,
+            user: { nombre: e.nombre, apellido: e.apellido },
+          }))
+        ),
+        period,
+        { detalleLimit: 0 }
+      ),
     };
   });
 
@@ -304,7 +320,15 @@ export async function buildExecutiveReport(organizationId: string): Promise<Exec
         tareasCompletadas: pipe.completadas,
         puntualidadPct: quality.puntualidadPct,
         altaPrioridadAbiertas: pipe.altaPrioridadAbiertas,
-        latencias: aggregateLatenciesForPeriod(emp.tareas, period),
+        latencias: aggregateLatenciesForPeriod(
+          emp.tareas.map((t) => ({
+            ...t,
+            userId: emp.id,
+            user: { nombre: emp.nombre, apellido: emp.apellido },
+          })),
+          period,
+          { detalleLimit: 0 }
+        ),
         alerta: personaAlerta({
           tareasAbiertas: pipe.abiertas,
           tareasVencidas: pipe.vencidas,

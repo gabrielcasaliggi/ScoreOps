@@ -205,7 +205,7 @@ export function OperationsDashboard({
         ))}
       </div>
 
-      <LatencyMetricsPanel latencias={data.latencias} />
+      <LatencyMetricsPanel latencias={data.latencias} showUser />
 
       {tieneFoco && (
         <div className="dash-focus-strip flex flex-wrap items-center gap-2 px-4 py-3 text-sm">

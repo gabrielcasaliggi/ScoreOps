@@ -246,7 +246,7 @@ export function TeamDashboard({
         />
       </div>
 
-      {latencias && <LatencyMetricsPanel latencias={latencias} />}
+      {latencias && <LatencyMetricsPanel latencias={latencias} showUser />}
 
       <PremioFormulaExplainer compact />
 

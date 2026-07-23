@@ -134,7 +134,7 @@ export async function GET() {
         tareasVencidas: abiertas.filter((t) => t.fechaLimite && t.fechaLimite < now).length,
         objetivosActivos: objs.length,
         kpiPromedio,
-        latencias: aggregateLatenciesForPeriod(tareasPersona, period),
+        latencias: aggregateLatenciesForPeriod(tareasPersona, period, { detalleLimit: 0 }),
       };
     });
 

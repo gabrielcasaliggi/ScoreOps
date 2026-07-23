@@ -7,6 +7,8 @@ import {
 
 export type TareaLatencyInput = Pick<
   Tarea,
+  | "id"
+  | "titulo"
   | "estado"
   | "assignedAt"
   | "startedAt"
@@ -14,7 +16,10 @@ export type TareaLatencyInput = Pick<
   | "createdAt"
   | "tiempoReal"
   | "updatedAt"
->;
+> & {
+  userId?: string;
+  user?: { nombre: string; apellido: string } | null;
+};
 
 export interface TaskLatency {
   /** Minutos desde asignación hasta empezar (null si no medible). */
@@ -32,6 +37,16 @@ export interface TaskLatency {
   pctOcioso: number | null;
 }
 
+export interface TaskLatencyRow extends TaskLatency {
+  id: string;
+  titulo: string;
+  userId?: string;
+  userNombre?: string;
+  assignedAt: string;
+  startedAt: string | null;
+  completedAt: string;
+}
+
 export interface LatencyStats {
   avg: number | null;
   median: number | null;
@@ -46,6 +61,8 @@ export interface AggregatedLatencies {
   tiempoTotal: LatencyStats;
   tiempoOcioso: LatencyStats;
   pctOcioso: LatencyStats;
+  /** Detalle por tarea (más recientes primero). */
+  porTarea: TaskLatencyRow[];
 }
 
 /** Diferencia en minutos (mínimo 0). */
@@ -73,12 +90,19 @@ export function computeTaskLatency(tarea: TareaLatencyInput): TaskLatency | null
       ? minutesBetween(tarea.assignedAt, tarea.startedAt)
       : null;
 
-  const tiempoActivoMin =
+  let tiempoActivoMin =
     tarea.tiempoReal != null && tarea.tiempoReal > 0
       ? tarea.tiempoReal
       : tarea.startedAt
         ? minutesBetween(tarea.startedAt, tarea.completedAt)
         : null;
+
+  // Si tiempoReal (manual o raro) supera el ciclo, preferir reloj started→completed
+  if (tiempoActivoMin != null && tiempoActivoMin > tiempoTotalMin) {
+    tiempoActivoMin = tarea.startedAt
+      ? minutesBetween(tarea.startedAt, tarea.completedAt)
+      : tiempoTotalMin;
+  }
 
   const tiempoOciosoMin =
     demoraInicioMin != null
@@ -100,6 +124,21 @@ export function computeTaskLatency(tarea: TareaLatencyInput): TaskLatency | null
     tiempoTotalMin,
     tiempoOciosoMin,
     pctOcioso,
+  };
+}
+
+function toLatencyRow(tarea: TareaLatencyInput, latency: TaskLatency): TaskLatencyRow {
+  return {
+    ...latency,
+    id: tarea.id,
+    titulo: tarea.titulo,
+    userId: tarea.userId,
+    userNombre: tarea.user
+      ? `${tarea.user.nombre} ${tarea.user.apellido}`.trim()
+      : undefined,
+    assignedAt: tarea.assignedAt.toISOString(),
+    startedAt: tarea.startedAt?.toISOString() ?? null,
+    completedAt: tarea.completedAt!.toISOString(),
   };
 }
 
@@ -135,15 +174,23 @@ export const EMPTY_LATENCIES: AggregatedLatencies = {
   tiempoTotal: { avg: null, median: null },
   tiempoOcioso: { avg: null, median: null },
   pctOcioso: { avg: null, median: null },
+  porTarea: [],
 };
 
+const DEFAULT_DETALLE_LIMIT = 50;
+
 /** Agrega latencias de tareas completadas. */
-export function aggregateLatencies(tareas: TareaLatencyInput[]): AggregatedLatencies {
+export function aggregateLatencies(
+  tareas: TareaLatencyInput[],
+  options?: { detalleLimit?: number }
+): AggregatedLatencies {
+  const detalleLimit = options?.detalleLimit ?? DEFAULT_DETALLE_LIMIT;
   const demoraInicio: number[] = [];
   const tiempoActivo: number[] = [];
   const tiempoTotal: number[] = [];
   const tiempoOcioso: number[] = [];
   const pctOcioso: number[] = [];
+  const rows: TaskLatencyRow[] = [];
   let count = 0;
   let conInicioMedible = 0;
 
@@ -159,9 +206,16 @@ export function aggregateLatencies(tareas: TareaLatencyInput[]): AggregatedLaten
     if (latency.tiempoTotalMin != null) tiempoTotal.push(latency.tiempoTotalMin);
     if (latency.tiempoOciosoMin != null) tiempoOcioso.push(latency.tiempoOciosoMin);
     if (latency.pctOcioso != null) pctOcioso.push(latency.pctOcioso);
+    if (detalleLimit > 0) {
+      rows.push(toLatencyRow(tarea, latency));
+    }
   }
 
   if (count === 0) return EMPTY_LATENCIES;
+
+  rows.sort(
+    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  );
 
   return {
     count,
@@ -174,15 +228,17 @@ export function aggregateLatencies(tareas: TareaLatencyInput[]): AggregatedLaten
       avg: avgFloat(pctOcioso),
       median: pctOcioso.length ? medianOf(pctOcioso.map((v) => Math.round(v))) : null,
     },
+    porTarea: detalleLimit > 0 ? rows.slice(0, detalleLimit) : [],
   };
 }
 
 /** Completadas del período + agregados de demora. */
 export function aggregateLatenciesForPeriod(
   tareas: TareaLatencyInput[],
-  period: ProductivityPeriod
+  period: ProductivityPeriod,
+  options?: { detalleLimit?: number }
 ): AggregatedLatencies {
-  return aggregateLatencies(filterTareasForPeriodStats(tareas, period));
+  return aggregateLatencies(filterTareasForPeriodStats(tareas, period), options);
 }
 
 /** Formato legible (reexporta formatMinutes del proyecto). */
