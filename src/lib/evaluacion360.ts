@@ -2,6 +2,7 @@ import type { EvaluacionRol, Role, User } from "@prisma/client";
 import { prisma } from "./prisma";
 import {
   getEvaluacion360Pesos,
+  DEFAULT_EVALUACION_360_PESOS,
   type Evaluacion360Pesos,
 } from "./system-config";
 
@@ -151,6 +152,51 @@ function promedio(nums: number[]): number {
   return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
 }
 
+export interface ContribucionRol {
+  rol: EvaluacionRol;
+  promedio: number;
+  /** Peso configurado (ej. 0.1). */
+  pesoConfig: number;
+  /** % efectivo tras reequilibrar roles presentes. */
+  pesoEfectivoPct: number;
+  /** Aporte al global (promedio × peso efectivo). */
+  aporte: number;
+}
+
+/** Desglose del puntaje global: solo roles con respuestas, pesos reequilibrados. */
+export function calcularContribucionesPorRol(
+  porRol: Partial<Record<EvaluacionRol, number>>,
+  pesos: Evaluacion360Pesos
+): ContribucionRol[] {
+  const entries: { rol: EvaluacionRol; peso: number; promedio: number }[] = [];
+  if (porRol.AUTOEVALUACION != null) {
+    entries.push({ rol: "AUTOEVALUACION", peso: pesos.autoevaluacion, promedio: porRol.AUTOEVALUACION });
+  }
+  if (porRol.GERENTE != null) {
+    entries.push({ rol: "GERENTE", peso: pesos.gerente, promedio: porRol.GERENTE });
+  }
+  if (porRol.PAR != null) {
+    entries.push({ rol: "PAR", peso: pesos.par, promedio: porRol.PAR });
+  }
+  if (porRol.SUBORDINADO != null) {
+    entries.push({ rol: "SUBORDINADO", peso: pesos.subordinado, promedio: porRol.SUBORDINADO });
+  }
+
+  const totalPeso = entries.reduce((s, e) => s + e.peso, 0);
+  if (totalPeso === 0) return [];
+
+  return entries.map((e) => {
+    const efectivo = e.peso / totalPeso;
+    return {
+      rol: e.rol,
+      promedio: e.promedio,
+      pesoConfig: e.peso,
+      pesoEfectivoPct: Math.round(efectivo * 1000) / 10,
+      aporte: Math.round(e.promedio * efectivo * 10) / 10,
+    };
+  });
+}
+
 export function calcularResultadoEvaluado(
   evaluadoId: string,
   nombre: string,
@@ -168,20 +214,11 @@ export function calcularResultadoEvaluado(
     if (pts.length > 0) porRol[rol] = promedio(pts);
   }
 
-  const pesosActivos: { rol: EvaluacionRol; peso: number }[] = [];
-  if (porRol.AUTOEVALUACION != null) pesosActivos.push({ rol: "AUTOEVALUACION", peso: pesos.autoevaluacion });
-  if (porRol.GERENTE != null) pesosActivos.push({ rol: "GERENTE", peso: pesos.gerente });
-  if (porRol.PAR != null) pesosActivos.push({ rol: "PAR", peso: pesos.par });
-  if (porRol.SUBORDINADO != null) pesosActivos.push({ rol: "SUBORDINADO", peso: pesos.subordinado });
-
-  let puntajeGlobal = 0;
-  if (pesosActivos.length > 0) {
-    const totalPeso = pesosActivos.reduce((s, p) => s + p.peso, 0);
-    puntajeGlobal =
-      Math.round(
-        (pesosActivos.reduce((s, p) => s + (porRol[p.rol] ?? 0) * (p.peso / totalPeso), 0) * 10)
-      ) / 10;
-  }
+  const contribuciones = calcularContribucionesPorRol(porRol, pesos);
+  const puntajeGlobal =
+    contribuciones.length === 0
+      ? 0
+      : Math.round(contribuciones.reduce((s, c) => s + c.aporte, 0) * 10) / 10;
 
   const porCompetencia = DEFAULT_COMPETENCIAS.map((competencia) => ({
     competencia,
@@ -250,12 +287,24 @@ export interface CoberturaRol {
 export async function getResultadoParaEvaluado(
   cicloId: string,
   evaluadoId: string
-): Promise<{ resultado: ResultadoEvaluado | null; cobertura: CoberturaRol[] }> {
+): Promise<{
+  resultado: ResultadoEvaluado | null;
+  cobertura: CoberturaRol[];
+  pesos: Evaluacion360Pesos;
+  contribuciones: ContribucionRol[];
+}> {
   const ciclo = await prisma.evaluacion360Ciclo.findUnique({
     where: { id: cicloId },
     select: { organizationId: true },
   });
-  if (!ciclo) return { resultado: null, cobertura: [] };
+  if (!ciclo) {
+    return {
+      resultado: null,
+      cobertura: [],
+      pesos: DEFAULT_EVALUACION_360_PESOS,
+      contribuciones: [],
+    };
+  }
 
   const pesos = await getEvaluacion360Pesos(ciclo.organizationId);
 
@@ -270,7 +319,9 @@ export async function getResultadoParaEvaluado(
     }),
   ]);
 
-  if (!evaluado) return { resultado: null, cobertura: [] };
+  if (!evaluado) {
+    return { resultado: null, cobertura: [], pesos, contribuciones: [] };
+  }
 
   const rolesEsperados: EvaluacionRol[] =
     evaluado.role === "GERENTE"
@@ -293,7 +344,7 @@ export async function getResultadoParaEvaluado(
   });
 
   if (respuestas.length === 0) {
-    return { resultado: null, cobertura };
+    return { resultado: null, cobertura, pesos, contribuciones: [] };
   }
 
   const resultado = calcularResultadoEvaluado(
@@ -306,7 +357,12 @@ export async function getResultadoParaEvaluado(
     evaluado.areaId
   );
 
-  return { resultado, cobertura };
+  return {
+    resultado,
+    cobertura,
+    pesos,
+    contribuciones: calcularContribucionesPorRol(resultado.porRol, pesos),
+  };
 }
 
 export async function getActiveCiclo(organizationId: string) {

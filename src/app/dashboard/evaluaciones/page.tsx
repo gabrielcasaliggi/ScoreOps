@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Evaluacion360Explainer } from "@/components/dashboard/evaluacion360-explainer";
 
 interface Ciclo {
   id: string;
@@ -53,6 +54,20 @@ interface CoberturaRol {
   total: number;
 }
 
+interface Contribucion {
+  rol: string;
+  promedio: number;
+  pesoEfectivoPct: number;
+  aporte: number;
+}
+
+interface Pesos360 {
+  autoevaluacion: number;
+  gerente: number;
+  par: number;
+  subordinado: number;
+}
+
 const ROL_LABEL: Record<string, string> = {
   AUTOEVALUACION: "Autoevaluación",
   GERENTE: "Como gerente",
@@ -67,6 +82,21 @@ const ROL_RECIBIDO_LABEL: Record<string, string> = {
   SUBORDINADO: "Evaluación de subordinados",
 };
 
+const ROL_HINT: Record<string, string> = {
+  AUTOEVALUACION: "Puntuate en cada competencia según cómo te ves vos",
+  GERENTE: "Evaluá a esta persona de tu equipo",
+  PAR: "Evaluá a un compañero",
+  SUBORDINADO: "Evaluá a tu jefe de área",
+};
+
+const ESCALA = [
+  { n: 1, label: "Bajo" },
+  { n: 2, label: "Regular" },
+  { n: 3, label: "Bien" },
+  { n: 4, label: "Muy bien" },
+  { n: 5, label: "Excelente" },
+];
+
 export default function EvaluacionesPage() {
   const [role, setRole] = useState<string | null>(null);
   const [ciclos, setCiclos] = useState<Ciclo[]>([]);
@@ -74,6 +104,8 @@ export default function EvaluacionesPage() {
   const [resultados, setResultados] = useState<Resultado[]>([]);
   const [miResultado, setMiResultado] = useState<Resultado | null>(null);
   const [miCobertura, setMiCobertura] = useState<CoberturaRol[]>([]);
+  const [contribuciones, setContribuciones] = useState<Contribucion[]>([]);
+  const [pesos, setPesos] = useState<Pesos360 | null>(null);
   const [cicloActivo, setCicloActivo] = useState<Ciclo | null>(null);
   const [selectedCicloId, setSelectedCicloId] = useState("");
   const [evaluando, setEvaluando] = useState<Pendiente | null>(null);
@@ -90,6 +122,20 @@ export default function EvaluacionesPage() {
   const isAdmin = role === "ADMINISTRADOR";
   const isManager = role === "ADMINISTRADOR" || role === "GERENTE";
   const isEmployee = role === "EMPLEADO";
+
+  const loadMisResultados = useCallback(async (cicloId?: string) => {
+    const misRes = await fetch(
+      cicloId
+        ? `/api/evaluaciones/mis-resultados?cicloId=${cicloId}`
+        : "/api/evaluaciones/mis-resultados"
+    );
+    if (!misRes.ok) return;
+    const mis = await misRes.json();
+    setMiResultado(mis.resultado ?? null);
+    setMiCobertura(mis.cobertura ?? []);
+    setContribuciones(mis.contribuciones ?? []);
+    setPesos(mis.pesos ?? null);
+  }, []);
 
   const load = useCallback(async () => {
     const [meRes, ciclosRes, pendRes] = await Promise.all([
@@ -116,18 +162,9 @@ export default function EvaluacionesPage() {
     }
 
     if (userRole === "EMPLEADO" || userRole === "GERENTE") {
-      const misRes = await fetch(
-        cicloId
-          ? `/api/evaluaciones/mis-resultados?cicloId=${cicloId}`
-          : "/api/evaluaciones/mis-resultados"
-      );
-      if (misRes.ok) {
-        const mis = await misRes.json();
-        setMiResultado(mis.resultado ?? null);
-        setMiCobertura(mis.cobertura ?? []);
-      }
+      await loadMisResultados(cicloId);
     }
-  }, []);
+  }, [loadMisResultados]);
 
   useEffect(() => {
     load();
@@ -206,12 +243,7 @@ export default function EvaluacionesPage() {
       setResultados(await res.json());
     }
     if (isEmployee || role === "GERENTE") {
-      const misRes = await fetch(`/api/evaluaciones/mis-resultados?cicloId=${cicloId}`);
-      if (misRes.ok) {
-        const mis = await misRes.json();
-        setMiResultado(mis.resultado ?? null);
-        setMiCobertura(mis.cobertura ?? []);
-      }
+      await loadMisResultados(cicloId);
     }
   }
 
@@ -223,9 +255,7 @@ export default function EvaluacionesPage() {
           Evaluaciones 360°
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {isEmployee
-            ? "Completá tu autoevaluación y mirá el feedback que recibís"
-            : "Autoevaluación, gerente y subordinados con ponderación configurable"}
+          Feedback de competencias · no afecta el premio semestral
         </p>
       </div>
 
@@ -234,6 +264,11 @@ export default function EvaluacionesPage() {
           {message}
         </div>
       )}
+
+      <Evaluacion360Explainer
+        pesos={pesos}
+        variant={isEmployee ? "employee" : "manager"}
+      />
 
       {cicloActivo && (
         <div className="rounded-2xl border border-violet-200/80 bg-violet-50/50 px-5 py-4 text-sm">
@@ -249,34 +284,42 @@ export default function EvaluacionesPage() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
-            Mis evaluaciones pendientes
+            1. Lo que tenés que completar
           </CardTitle>
           <CardDescription>
             {pendientes.length === 0
-              ? "No tenés evaluaciones pendientes"
-              : `${pendientes.length} evaluación(es) por completar`}
+              ? "No tenés formularios pendientes en este ciclo"
+              : `${pendientes.length} formulario(s) por enviar · esto es lo que vos respondés`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          {pendientes.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Cuando haya un ciclo activo y te toque autoevaluarte o evaluar a tu gerente, aparece
+              acá.
+            </p>
+          )}
           {pendientes.map((p) => (
             <div
               key={`${p.evaluadoId}-${p.rol}`}
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 bg-white/80"
             >
-              <div>
+              <div className="min-w-0">
                 <p className="font-medium">
                   {p.rol === "AUTOEVALUACION"
                     ? "Tu autoevaluación"
                     : `Evaluá a ${p.evaluadoNombre}`}
                 </p>
-                <p className="text-xs text-muted-foreground">{ROL_LABEL[p.rol] ?? p.rol}</p>
+                <p className="text-xs text-muted-foreground">
+                  {ROL_HINT[p.rol] ?? ROL_LABEL[p.rol] ?? p.rol}
+                </p>
                 <Progress
                   value={(p.progreso / p.total) * 100}
                   className="mt-2 h-1.5 w-40"
                 />
               </div>
               <Button size="sm" onClick={() => abrirEvaluacion(p)}>
-                Evaluar
+                Completar
               </Button>
             </div>
           ))}
@@ -288,55 +331,107 @@ export default function EvaluacionesPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Star className="h-4 w-4" />
-              Mi resultado 360°
+              2. Cómo te evaluaron (tu resultado)
             </CardTitle>
             <CardDescription>
-              Feedback recibido sobre vos en este ciclo (sin ver evaluaciones de otras personas)
+              Solo feedback hacia vos. El puntaje global mezcla los roles que ya respondieron, con
+              pesos distintos.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {miCobertura.length > 0 && (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {miCobertura.map((c) => (
-                  <div
-                    key={c.rol}
-                    className="flex items-center justify-between rounded-xl border px-3 py-2 text-sm"
-                  >
-                    <span>{ROL_RECIBIDO_LABEL[c.rol] ?? c.rol}</span>
-                    <Badge variant={c.completa ? "default" : "secondary"}>
-                      {c.completa ? "Recibida" : "Pendiente"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {miResultado ? (
-              <div className="space-y-3">
-                <div className="rounded-2xl border bg-slate-50/80 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">Puntaje global</p>
-                  <p className="text-2xl font-bold tracking-tight">{miResultado.puntajeGlobal}</p>
-                  {miResultado.porRol && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {Object.entries(miResultado.porRol)
-                        .map(([rol, pts]) => `${ROL_RECIBIDO_LABEL[rol] ?? rol}: ${pts}`)
-                        .join(" · ")}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  {miResultado.porCompetencia.map((c) => (
-                    <div key={c.competencia} className="flex items-center justify-between text-sm">
-                      <span>{c.competencia}</span>
-                      <span className="font-medium">{c.puntaje || "—"}</span>
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Estado de cada mirada
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {miCobertura.map((c) => (
+                    <div
+                      key={c.rol}
+                      className="flex items-center justify-between rounded-xl border px-3 py-2 text-sm"
+                    >
+                      <span>{ROL_RECIBIDO_LABEL[c.rol] ?? c.rol}</span>
+                      <Badge variant={c.completa ? "default" : "secondary"}>
+                        {c.completa ? "Lista" : "Aún no"}
+                      </Badge>
                     </div>
                   ))}
                 </div>
               </div>
+            )}
+
+            {miResultado ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border bg-slate-50/80 px-4 py-4">
+                  <p className="text-xs text-muted-foreground">Puntaje global (1–5)</p>
+                  <p className="text-3xl font-bold tracking-tight">{miResultado.puntajeGlobal}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    No es el promedio simple: cada rol aporta según su peso.
+                  </p>
+                </div>
+
+                {contribuciones.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Cómo se calcula tu global
+                    </p>
+                    <div className="overflow-hidden rounded-xl border">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 font-medium">Mirada</th>
+                            <th className="px-3 py-2 font-medium">Promedio</th>
+                            <th className="px-3 py-2 font-medium">Peso</th>
+                            <th className="px-3 py-2 font-medium">Aporte</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {contribuciones.map((c) => (
+                            <tr key={c.rol} className="border-t">
+                              <td className="px-3 py-2">
+                                {ROL_RECIBIDO_LABEL[c.rol] ?? c.rol}
+                              </td>
+                              <td className="px-3 py-2">{c.promedio}</td>
+                              <td className="px-3 py-2">{c.pesoEfectivoPct}%</td>
+                              <td className="px-3 py-2 font-medium">{c.aporte}</td>
+                            </tr>
+                          ))}
+                          <tr className="border-t bg-slate-50/80">
+                            <td className="px-3 py-2 font-medium" colSpan={3}>
+                              Global
+                            </td>
+                            <td className="px-3 py-2 font-bold">{miResultado.puntajeGlobal}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Por competencia
+                  </p>
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Promedio simple de las notas recibidas en cada competencia.
+                  </p>
+                  <div className="space-y-2">
+                    {miResultado.porCompetencia.map((c) => (
+                      <div
+                        key={c.competencia}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span>{c.competencia}</span>
+                        <span className="font-medium">{c.puntaje || "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Todavía no hay evaluaciones hacia vos en este ciclo. Cuando tu gerente (u otros
-                roles) completen su parte, vas a ver el resultado acá.
+                Todavía no hay notas hacia vos. Completá tu autoevaluación y esperá la del gerente:
+                después vas a ver el global y el desglose acá.
               </p>
             )}
           </CardContent>
@@ -347,6 +442,10 @@ export default function EvaluacionesPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Administrar ciclos</CardTitle>
+            <CardDescription>
+              Abrí un ciclo para que el equipo complete autoevaluaciones y evaluaciones de
+              jefatura.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleCrearCiclo} className="grid gap-3 sm:grid-cols-4">
@@ -413,8 +512,11 @@ export default function EvaluacionesPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Resultados del ciclo
+              Resultados del equipo
             </CardTitle>
+            <CardDescription>
+              Puntaje global ponderado por empleado. No impacta el premio.
+            </CardDescription>
             <select
               className="mt-2 h-10 rounded-md border border-input bg-background px-3 text-sm max-w-xs"
               value={selectedCicloId}
@@ -470,19 +572,23 @@ export default function EvaluacionesPage() {
           </DialogHeader>
           <form onSubmit={enviarEvaluacion} className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {evaluando && (ROL_LABEL[evaluando.rol] ?? evaluando.rol)} · Escala 1 a 5
+              {evaluando && (ROL_HINT[evaluando.rol] ?? ROL_LABEL[evaluando.rol])}
             </p>
+            <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Escala: {ESCALA.map((e) => `${e.n} ${e.label}`).join(" · ")}
+            </div>
             {evaluando?.competencias.map((comp) => (
               <div key={comp} className="space-y-2">
                 <Label>{comp}</Label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((n) => (
+                <div className="flex flex-wrap gap-2">
+                  {ESCALA.map(({ n, label }) => (
                     <Button
                       key={n}
                       type="button"
                       size="sm"
                       variant={scores[comp] === n ? "default" : "outline"}
                       onClick={() => setScores({ ...scores, [comp]: n })}
+                      title={label}
                     >
                       {n}
                     </Button>

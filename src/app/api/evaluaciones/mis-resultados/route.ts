@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, apiSuccess, requireAuth } from "@/lib/api";
 import { getActiveCiclo, getResultadoParaEvaluado } from "@/lib/evaluacion360";
+import { getEvaluacion360Pesos } from "@/lib/system-config";
 
 /** Resultado 360 del usuario autenticado (solo hacia sí mismo). */
 export async function GET(request: NextRequest) {
@@ -14,7 +15,14 @@ export async function GET(request: NextRequest) {
   if (!cicloId) {
     const activo = await getActiveCiclo(user.organizationId);
     if (!activo) {
-      return apiSuccess({ ciclo: null, resultado: null, cobertura: [] });
+      const pesos = await getEvaluacion360Pesos(user.organizationId);
+      return apiSuccess({
+        ciclo: null,
+        resultado: null,
+        cobertura: [],
+        pesos,
+        contribuciones: [],
+      });
     }
     cicloId = activo.id;
   }
@@ -24,7 +32,7 @@ export async function GET(request: NextRequest) {
   });
   if (!ciclo) return apiError("Ciclo no encontrado", 404);
 
-  const { resultado, cobertura } = await getResultadoParaEvaluado(cicloId, user.id);
+  const data = await getResultadoParaEvaluado(cicloId, user.id);
 
-  return apiSuccess({ ciclo, resultado, cobertura });
+  return apiSuccess({ ciclo, ...data });
 }

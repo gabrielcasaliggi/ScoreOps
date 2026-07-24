@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildAssignmentsForUser,
+  calcularContribucionesPorRol,
   calcularResultadoEvaluado,
   DEFAULT_COMPETENCIAS,
 } from "./evaluacion360";
@@ -82,6 +83,23 @@ describe("buildAssignmentsForUser", () => {
       asg.filter((a) => a.rol === "GERENTE").length,
       0
     );
+  });
+});
+
+describe("calcularContribucionesPorRol", () => {
+  it("reequilibra pesos cuando solo hay auto y gerente", () => {
+    const rows = calcularContribucionesPorRol(
+      { AUTOEVALUACION: 4, GERENTE: 2 },
+      { autoevaluacion: 0.1, gerente: 0.4, par: 0.3, subordinado: 0.2 }
+    );
+    assert.equal(rows.length, 2);
+    const auto = rows.find((r) => r.rol === "AUTOEVALUACION");
+    const ger = rows.find((r) => r.rol === "GERENTE");
+    assert.ok(auto && ger);
+    assert.equal(auto.pesoEfectivoPct, 20);
+    assert.equal(ger.pesoEfectivoPct, 80);
+    assert.equal(auto.aporte, 0.8);
+    assert.equal(ger.aporte, 1.6);
   });
 });
 
